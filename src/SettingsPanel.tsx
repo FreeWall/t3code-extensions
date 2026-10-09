@@ -36,6 +36,15 @@ export function SettingsPanel({
     };
   }, [onClose]);
 
+  /** Swaps with the neighbour; hidden projects take part, as they keep their rail slot. */
+  const move = (index: number, direction: -1 | 1) => {
+    const ids = projects.map((project) => project.id);
+    const next = index + direction;
+    if (next < 0 || next >= ids.length) return;
+    [ids[index], ids[next]] = [ids[next]!, ids[index]!];
+    updateSettings({ projectOrder: ids });
+  };
+
   const setVisible = (id: string, visible: boolean) => {
     const others = settings.hiddenProjects.filter((other) => other !== id);
     updateSettings({ hiddenProjects: visible ? others : [...others, id] });
@@ -45,19 +54,61 @@ export function SettingsPanel({
     <div ref={panel} class="t3rail-settings" role="dialog" aria-label="Rail settings">
       <div class="t3rail-settings-heading">Projects on the rail</div>
       <div class="t3rail-settings-list">
-        {projects.map((project) => (
-          <label key={project.id} class="t3rail-settings-row" title={project.workspaceRoot}>
-            <span class="t3rail-settings-icon">
-              <ProjectIcon project={project} live={live} />
-            </span>
-            <span class="t3rail-settings-name">{project.title}</span>
-            <input
-              type="checkbox"
-              checked={!hidden.has(project.id)}
-              onChange={(event) => setVisible(project.id, event.currentTarget.checked)}
-            />
-          </label>
-        ))}
+        {projects.map((project, index) => {
+          const visible = !hidden.has(project.id);
+          return (
+            <div
+              key={project.id}
+              class="t3rail-settings-row"
+              data-hidden={!visible}
+              title={project.workspaceRoot}
+            >
+              <span class="t3rail-settings-icon">
+                <ProjectIcon project={project} live={live} />
+              </span>
+              <span class="t3rail-settings-name">{project.title}</span>
+              <span class="t3rail-settings-actions">
+                <button
+                  type="button"
+                  class="t3rail-settings-move"
+                  title="Move up"
+                  aria-label={`Move ${project.title} up`}
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m5 12 7-7 7 7" />
+                    <path d="M12 19V5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="t3rail-settings-move"
+                  title="Move down"
+                  aria-label={`Move ${project.title} down`}
+                  disabled={index === projects.length - 1}
+                  onClick={() => move(index, 1)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14" />
+                    <path d="m19 12-7 7-7-7" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  role="switch"
+                  class="t3rail-switch"
+                  aria-checked={visible}
+                  title={visible ? "Shown on the rail" : "Hidden from the rail"}
+                  aria-label={`Show ${project.title} on the rail`}
+                  onClick={() => setVisible(project.id, !visible)}
+                >
+                  <span class="t3rail-switch-thumb" />
+                </button>
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div class="t3rail-settings-footer">
         {path ?? "Offline: changes are saved once the app reconnects"}
