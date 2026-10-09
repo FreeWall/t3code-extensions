@@ -260,8 +260,9 @@ html[data-t3rail] #root {
 .t3rail-settings-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 5px 8px;
+    gap: calc(var(--spacing) * 2);
+    font-size: 14px;
+    padding: 4px 8px;
     border-radius: 6px;
     cursor: pointer;
 }
@@ -280,15 +281,12 @@ html[data-t3rail] #root {
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--muted-foreground, #a1a1aa) 12%, transparent);
     overflow: hidden;
 }
 
 .t3rail-settings-icon > * {
-    transform: scale(0.8);
+    width: 16px;
+    height: 16px;
 }
 
 .t3rail-settings-name {
