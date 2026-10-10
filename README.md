@@ -10,9 +10,9 @@ The rail sits on the left edge of the window with one icon per project:
   runs you haven't opened; clicking it opens the first one.
 - An amber pen marks a project with an unsent composer draft; clicking it opens the draft.
 - A spinning ring shows a project with a running agent.
-- Projects can be reordered by drag and drop.
-- The gear at the bottom opens the rail settings: untick a project to hide it from the rail. It stays
-  in the app's own project picker.
+- Projects can be reordered by drag and drop, or follow the app sidebar's own sort.
+- The gear at the bottom opens the rail settings: pick the order, move projects up and down, and
+  switch a project off to hide it from the rail. It stays in the app's own project picker.
 
 ## Settings
 
@@ -20,6 +20,7 @@ Order and hidden projects live in `~/.config/t3code-rail/settings.json`:
 
 ```json
 {
+  "projectSort": "manual",
   "projectOrder": ["<project id>", "..."],
   "hiddenProjects": ["<project id>"]
 }
@@ -29,6 +30,10 @@ The file is read through the backend (`projects.readFile` / `projects.writeFile`
 itself can't touch the disk. It is read once when the app starts, so hand edits need a window reload;
 keys the rail doesn't know are kept. A copy in `localStorage` covers the
 moment before the socket is up, and changes made while offline are written once it reconnects.
+
+`projectSort` is `"manual"` (the rail's own `projectOrder`) or `"app"`, which mirrors the sidebar's
+"Sort projects" choice: last user message, created at, or the sidebar's manual drag order. The rail
+reads that from the app's client settings and UI state, rechecking after clicks and key presses.
 
 ## How it works
 

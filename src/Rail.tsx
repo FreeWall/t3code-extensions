@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "preact/compat";
 
+import { getAppOrder, sortLikeApp, subscribeAppOrder, watchAppOrder } from "./appOrder.ts";
 import { activeRoute, navigate, readScopeLabel, selectScope, watchScope } from "./app.ts";
 import { getDrafts, subscribeDrafts, type Draft } from "./drafts.ts";
 import { ProjectIcon } from "./ProjectIcon.tsx";
@@ -90,11 +91,23 @@ export function Rail() {
   const [dragging, setDragging] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  const appOrder = useSyncExternalStore(subscribeAppOrder, getAppOrder);
   const live = state.status === "live";
+  const manual = settings.projectSort === "manual";
+
+  useEffect(() => (manual ? undefined : watchAppOrder()), [manual]);
 
   const allProjects = useMemo(
-    () => orderProjects(state.projects.values(), settings.projectOrder),
-    [state.projects, settings.projectOrder],
+    () =>
+      manual
+        ? orderProjects(state.projects.values(), settings.projectOrder)
+        : sortLikeApp(
+            [...state.projects.values()],
+            state.threads.values(),
+            state.environmentId,
+            appOrder,
+          ),
+    [manual, state.projects, state.threads, state.environmentId, settings.projectOrder, appOrder],
   );
   const projects = useMemo(() => {
     const hidden = new Set(settings.hiddenProjects);
@@ -142,7 +155,7 @@ export function Rail() {
               key={project.id}
               class="t3rail-slot"
               data-dragging={dragging === project.id}
-              draggable
+              draggable={manual}
               onDragStart={(event) => {
                 event.dataTransfer?.setData("text/plain", project.id);
                 setDragging(project.id);

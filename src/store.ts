@@ -15,6 +15,7 @@ export interface Project {
   readonly faviconPath: string | null;
   readonly projectIcon: ProjectIcon | null;
   readonly createdAt: string;
+  readonly updatedAt: string;
 }
 
 export interface Thread {
@@ -25,7 +26,9 @@ export interface Thread {
   readonly needsInput: boolean;
   /** Latest run finished after the thread was last opened. */
   readonly unread: boolean;
+  readonly createdAt: string;
   readonly updatedAt: string;
+  readonly latestUserMessageAt: string | null;
 }
 
 export type ConnectionStatus = "connecting" | "live" | "offline";
@@ -80,6 +83,7 @@ function toProject(value: unknown): Project | undefined {
     faviconPath: string(raw.faviconPath) ?? null,
     projectIcon: toProjectIcon(raw.projectIcon),
     createdAt: string(raw.createdAt) ?? "",
+    updatedAt: string(raw.updatedAt) ?? "",
   };
 }
 
@@ -114,7 +118,9 @@ function toThread(value: unknown): Thread | undefined {
       completedAt !== undefined &&
       visitedAt !== undefined &&
       Date.parse(completedAt) > Date.parse(visitedAt),
+    createdAt: string(raw.createdAt) ?? "",
     updatedAt: string(raw.updatedAt) ?? "",
+    latestUserMessageAt: string(raw.latestUserMessageAt) ?? null,
   };
 }
 

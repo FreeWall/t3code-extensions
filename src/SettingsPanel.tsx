@@ -18,6 +18,7 @@ export function SettingsPanel({
   const path = useSyncExternalStore(subscribeSettings, settingsPath);
   const panel = useRef<HTMLDivElement>(null);
   const hidden = new Set(settings.hiddenProjects);
+  const manual = settings.projectSort === "manual";
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -52,6 +53,26 @@ export function SettingsPanel({
 
   return (
     <div ref={panel} class="t3rail-settings" role="dialog" aria-label="Rail settings">
+      <div class="t3rail-settings-heading">Order</div>
+      <div class="t3rail-segmented" role="radiogroup" aria-label="Project order">
+        {(
+          [
+            ["manual", "Manual", "Drag on the rail or use the arrows below"],
+            ["app", "Same as sidebar", "Follow the sort set in the app's sidebar"],
+          ] as const
+        ).map(([value, label, title]) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={settings.projectSort === value}
+            title={title}
+            onClick={() => updateSettings({ projectSort: value })}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div class="t3rail-settings-heading">Projects on the rail</div>
       <div class="t3rail-settings-list">
         {projects.map((project, index) => {
@@ -73,7 +94,7 @@ export function SettingsPanel({
                   class="t3rail-settings-move"
                   title="Move up"
                   aria-label={`Move ${project.title} up`}
-                  disabled={index === 0}
+                  disabled={index === 0 || manual}
                   onClick={() => move(index, -1)}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -86,7 +107,7 @@ export function SettingsPanel({
                   class="t3rail-settings-move"
                   title="Move down"
                   aria-label={`Move ${project.title} down`}
-                  disabled={index === projects.length - 1}
+                  disabled={index === projects.length - 1 || manual}
                   onClick={() => move(index, 1)}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">

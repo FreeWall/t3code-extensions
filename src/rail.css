@@ -251,6 +251,37 @@ html[data-t3rail] #root {
     text-transform: uppercase;
 }
 
+.t3rail-segmented {
+    display: flex;
+    gap: 2px;
+    margin: 0 12px 4px;
+    padding: 2px;
+    border-radius: 6px;
+    background: var(--muted, rgb(255 255 255 / 0.06));
+}
+
+.t3rail-segmented button {
+    flex: 1;
+    height: 24px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted-foreground, #a1a1aa);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.t3rail-segmented button:hover {
+    color: var(--foreground, #fafafa);
+}
+
+.t3rail-segmented button[aria-checked="true"] {
+    background: var(--background, #18181b);
+    color: var(--foreground, #fafafa);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
 .t3rail-settings-list {
     overflow-y: auto;
     padding: 0 4px 4px;

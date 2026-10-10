@@ -28,6 +28,7 @@ declare global {
     desktopBridge?: {
       getLocalEnvironmentBootstraps?: () => ReadonlyArray<DesktopBootstrap>;
       getLocalEnvironmentBearerToken?: () => Promise<string>;
+      getClientSettings?: () => Promise<unknown>;
     };
   }
 }
