@@ -47,7 +47,8 @@ function LucideIcon({ name, color }: { name: string; color: string }) {
       class="t3rail-lucide"
       viewBox="0 0 24 24"
       fill="none"
-      stroke={color}
+      stroke="currentColor"
+      style={{ "--t3rail-icon-color": color }}
       stroke-width="2"
       stroke-linecap="round"
       stroke-linejoin="round"
@@ -110,7 +111,7 @@ export function ProjectIcon({ project, live }: { project: Project; live: boolean
   }
   const text = icon?.kind === "monogram" ? icon.text : generated.monogram;
   return (
-    <span class="t3rail-monogram" style={{ color: color(icon?.color) }}>
+    <span class="t3rail-monogram" style={{ "--t3rail-icon-color": color(icon?.color) }}>
       {text}
     </span>
   );

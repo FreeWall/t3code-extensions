@@ -3,6 +3,14 @@
 html[data-t3rail] {
     --t3rail-width: 56px;
     --t3rail-background: color-mix(in srgb, var(--sidebar, #18181b) 70%, black);
+    --t3rail-shadow: rgb(0 0 0 / 0.4);
+}
+
+/* Light theme (the app toggles `.dark` on <html>): only a slight shade under the
+   sidebar, as 30% black reads as muddy gray against a light app. */
+html[data-t3rail]:not(.dark) {
+    --t3rail-background: color-mix(in srgb, var(--sidebar, #fafafa) 94%, black);
+    --t3rail-shadow: rgb(0 0 0 / 0.12);
 }
 
 /* A transformed #root becomes the containing block for the app's fixed sidebar,
@@ -186,6 +194,16 @@ html[data-t3rail] #root {
     object-fit: contain;
 }
 
+.t3rail-monogram,
+.t3rail-lucide {
+    color: var(--t3rail-icon-color);
+}
+
+/* Icon colors are the app's dark-theme -400 shades; deepen them on light backgrounds. */
+html[data-t3rail]:not(.dark) :is(.t3rail-monogram, .t3rail-lucide) {
+    color: color-mix(in srgb, var(--t3rail-icon-color) 75%, black);
+}
+
 .t3rail-lucide {
     width: 22px;
     height: 22px;
@@ -237,7 +255,7 @@ html[data-t3rail] #root {
     border-radius: 10px;
     background: var(--popover, #18181b);
     color: var(--popover-foreground, var(--foreground, #f5f5f5));
-    box-shadow: 0 12px 32px rgb(0 0 0 / 0.4);
+    box-shadow: 0 12px 32px var(--t3rail-shadow);
     font: 13px/1.4 system-ui, sans-serif;
     -webkit-app-region: no-drag;
 }

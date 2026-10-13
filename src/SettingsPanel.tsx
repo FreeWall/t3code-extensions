@@ -94,7 +94,7 @@ export function SettingsPanel({
                   class="t3rail-settings-move"
                   title="Move up"
                   aria-label={`Move ${project.title} up`}
-                  disabled={index === 0 || manual}
+                  disabled={index === 0 || !manual}
                   onClick={() => move(index, -1)}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -107,7 +107,7 @@ export function SettingsPanel({
                   class="t3rail-settings-move"
                   title="Move down"
                   aria-label={`Move ${project.title} down`}
-                  disabled={index === projects.length - 1 || manual}
+                  disabled={index === projects.length - 1 || !manual}
                   onClick={() => move(index, 1)}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
