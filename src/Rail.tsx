@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "preact/compat";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "preact/compat";
 
 import { getAppOrder, sortLikeApp, subscribeAppOrder, watchAppOrder } from "./appOrder.ts";
 import { activeRoute, navigate, readScopeLabel, selectScope, watchScope } from "./app.ts";
@@ -83,12 +91,54 @@ function tooltip(project: Project, activity: ProjectActivity | undefined): strin
   return parts.join(" · ");
 }
 
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+/** FLIP: slides slots from where they are on screen whenever the order changes. */
+function useSlideOnReorder(
+  slots: ReadonlyMap<string, HTMLElement>,
+  order: unknown,
+  draggedId: string | undefined,
+): void {
+  const lastTops = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const tops = new Map<string, number>();
+    for (const [id, el] of slots) {
+      const top = el.offsetTop;
+      tops.set(id, top);
+      // The dragged slot follows the pointer instead.
+      if (id === draggedId) continue;
+      // Mid-slide, or the pointer offset of a just released slot.
+      const shift = new DOMMatrix(getComputedStyle(el).transform).m42;
+      el.style.transform = "";
+      const last = lastTops.current.get(id);
+      if (last === undefined || last + shift === top || reducedMotion.matches) continue;
+      for (const animation of el.getAnimations()) animation.cancel();
+      el.animate(
+        [{ transform: `translateY(${last + shift - top}px)` }, { transform: "none" }],
+        { duration: 150, easing: "ease-out" },
+      );
+    }
+    lastTops.current = tops;
+  }, [order]);
+}
+
+/** Pointer travel before a press on a project becomes a drag. */
+const DRAG_THRESHOLD = 4;
+
 export function Rail() {
   const state = useSyncExternalStore(subscribe, getState);
   const drafts = useSyncExternalStore(subscribeDrafts, getDrafts);
   const { scopeLabel, route } = useAppLocation();
   const settings = useSyncExternalStore(subscribeSettings, getSettings);
-  const [dragging, setDragging] = useState<string | null>(null);
+  // While dragging, the order the rail previews; saved on release.
+  const [drag, setDrag] = useState<{ id: string; order: string[] } | null>(null);
+  // Read by the document listeners, which outlive a render.
+  const dragRef = useRef(drag);
+  dragRef.current = drag;
+  /** Where the dragged slot was grabbed, and where the pointer is now; list coordinates. */
+  const pointer = useRef<{ grab: number; clientY: number } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const slots = useRef(new Map<string, HTMLDivElement>()).current;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const closeSettings = useCallback(() => setSettingsOpen(false), []);
   const appOrder = useSyncExternalStore(subscribeAppOrder, getAppOrder);
@@ -111,19 +161,94 @@ export function Rail() {
   );
   const projects = useMemo(() => {
     const hidden = new Set(settings.hiddenProjects);
-    return allProjects.filter((project) => !hidden.has(project.id));
-  }, [allProjects, settings.hiddenProjects]);
+    const ordered = drag ? orderProjects(allProjects, drag.order) : allProjects;
+    return ordered.filter((project) => !hidden.has(project.id));
+  }, [allProjects, drag, settings.hiddenProjects]);
+  useSlideOnReorder(slots, projects, drag?.id);
+  useLayoutEffect(() => follow(), [projects]);
   const activity = useMemo(
     () => summarize(state.threads, drafts, route),
     [state.threads, drafts, route],
   );
 
-  const moveProject = (id: string, beforeId: string) => {
-    if (id === beforeId) return;
+  const listY = (list: HTMLElement, clientY: number) =>
+    clientY - list.getBoundingClientRect().top + list.scrollTop;
+
+  /** Keeps the dragged slot under the pointer; its layout spot moves as the order does. */
+  const follow = () => {
+    const el = dragRef.current && slots.get(dragRef.current.id);
+    if (!el || !pointer.current || !listRef.current) return;
+    const y = listY(listRef.current, pointer.current.clientY) - pointer.current.grab;
+    el.style.transform = `translateY(${y - el.offsetTop}px)`;
+  };
+
+  /** Puts the dragged project before the first slot whose middle is below the pointer. */
+  const previewDrop = (clientY: number) => {
+    const current = dragRef.current;
+    if (!current || !listRef.current) return;
+    const y = listY(listRef.current, clientY);
+    // offsetTop ignores transforms, so slides and the dragged slot don't shift targets.
+    let before: HTMLElement | undefined;
+    let beforeId: string | undefined;
+    for (const [id, slot] of slots) {
+      if (id === current.id || slot.offsetTop + slot.offsetHeight / 2 <= y) continue;
+      if (!before || slot.offsetTop < before.offsetTop) [before, beforeId] = [slot, id];
+    }
     // Hidden projects keep their place, so unhiding one puts it back where it was.
-    const ids = allProjects.map((project) => project.id).filter((other) => other !== id);
-    ids.splice(ids.indexOf(beforeId), 0, id);
-    updateSettings({ projectOrder: ids });
+    const order = current.order.filter((id) => id !== current.id);
+    order.splice(beforeId ? order.indexOf(beforeId) : order.length, 0, current.id);
+    if (order.every((id, index) => id === current.order[index])) return;
+    dragRef.current = { id: current.id, order };
+    setDrag(dragRef.current);
+  };
+
+  /** A press turns into a drag once it moves; a plain click still selects the project. */
+  const pressProject = (event: PointerEvent, id: string) => {
+    const el = slots.get(id);
+    const list = listRef.current;
+    if (!manual || event.button !== 0 || !el || !list) return;
+    const { pointerId, clientY: startY } = event;
+    const grab = listY(list, startY) - el.offsetTop;
+
+    const move = (moved: PointerEvent) => {
+      if (moved.pointerId !== pointerId) return;
+      if (!pointer.current) {
+        if (Math.abs(moved.clientY - startY) < DRAG_THRESHOLD) return;
+        pointer.current = { grab, clientY: moved.clientY };
+        el.setPointerCapture(pointerId);
+        dragRef.current = { id, order: allProjects.map((project) => project.id) };
+        setDrag(dragRef.current);
+      }
+      pointer.current.clientY = moved.clientY;
+      follow();
+      previewDrop(moved.clientY);
+    };
+    const finish = (save: boolean) => {
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", release);
+      document.removeEventListener("pointercancel", cancel);
+      document.removeEventListener("keydown", escape, true);
+      if (!pointer.current) return;
+      pointer.current = null;
+      if (save && dragRef.current) updateSettings({ projectOrder: dragRef.current.order });
+      dragRef.current = null;
+      setDrag(null);
+      // The release would also click the project under it.
+      const swallow = (click: Event) => click.stopPropagation();
+      window.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener("click", swallow, true));
+    };
+    const release = (up: PointerEvent) => up.pointerId === pointerId && finish(true);
+    const cancel = (up: PointerEvent) => up.pointerId === pointerId && finish(false);
+    const escape = (key: KeyboardEvent) => {
+      if (key.key !== "Escape" || !pointer.current) return;
+      key.stopPropagation();
+      finish(false);
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", release);
+    document.addEventListener("pointercancel", cancel);
+    document.addEventListener("keydown", escape, true);
   };
 
   const openThread = (thread: Thread) => {
@@ -144,7 +269,7 @@ export function Rail() {
         </svg>
       </button>
       <div class="t3rail-separator" />
-      <div class="t3rail-list">
+      <div class="t3rail-list" ref={listRef}>
         {projects.map((project) => {
           const entry = activity.get(project.id);
           // Waiting threads first: they block an agent, a finished one doesn't.
@@ -154,19 +279,14 @@ export function Rail() {
             <div
               key={project.id}
               class="t3rail-slot"
-              data-dragging={dragging === project.id}
-              draggable={manual}
-              onDragStart={(event) => {
-                event.dataTransfer?.setData("text/plain", project.id);
-                setDragging(project.id);
+              ref={(el) => {
+                if (el) slots.set(project.id, el);
+                else slots.delete(project.id);
               }}
-              onDragEnd={() => setDragging(null)}
-              onDragOver={(event) => dragging && event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                if (dragging) moveProject(dragging, project.id);
-                setDragging(null);
-              }}
+              data-dragging={drag?.id === project.id}
+              onPointerDown={(event) => pressProject(event, project.id)}
+              // Native drag of the favicon would steal the pointer.
+              onDragStart={(event) => event.preventDefault()}
             >
               <span class="t3rail-pill" />
               <button
