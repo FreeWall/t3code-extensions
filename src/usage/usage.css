@@ -1,0 +1,179 @@
+/* Usage limits in the thread header. Loaded as text by main.tsx. */
+
+#t3usage-root {
+    flex-shrink: 0;
+}
+
+.t3usage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 8px;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--muted-foreground, #a1a1aa);
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+}
+
+/* The header is an Electron drag region, which swallows hover and focus. */
+.t3usage-chip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+}
+
+.t3usage-chip:hover,
+.t3usage-chip:focus-visible {
+    background: color-mix(in srgb, var(--accent, #27272a) 70%, transparent);
+}
+
+.t3usage-chip[data-dragging="true"] {
+    z-index: 1;
+    opacity: 0.85;
+    background: color-mix(in srgb, var(--accent, #27272a) 70%, transparent);
+}
+
+.t3usage[data-dragging="true"] * {
+    cursor: grabbing;
+}
+
+/* No popovers mid-drag; they would cover the drop spots. */
+.t3usage[data-dragging="true"] .t3usage-popover {
+    display: none !important;
+}
+
+.t3usage-chip[aria-busy="true"] :is(.t3usage-bars, .t3usage-value) {
+    animation: t3usage-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes t3usage-pulse {
+    to {
+        opacity: 0.35;
+    }
+}
+
+.t3usage-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--foreground, #fafafa);
+}
+
+.t3usage-monogram {
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    background: var(--t3usage-color);
+    color: var(--background, #09090b);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* Session on top, weekly below, both in the provider's colour. */
+.t3usage-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--foreground, #fafafa);
+}
+
+.t3usage-track {
+    --t3usage-fill: var(--t3usage-color);
+    width: 32px;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--t3usage-fill) 20%, transparent);
+}
+
+.t3usage-track[data-low="true"] {
+    --t3usage-fill: #ef4444;
+}
+
+.t3usage-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--t3usage-fill);
+}
+
+.t3usage-value {
+    min-width: 3.6ch;
+    text-align: right;
+}
+
+.t3usage-value[data-low="true"] {
+    color: #ef4444;
+}
+
+.t3usage-reset {
+    font-size: 11px;
+    opacity: 0.75;
+}
+
+.t3usage-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 60;
+    display: none;
+    min-width: 240px;
+    padding: 8px 10px;
+    border: 1px solid var(--border, #27272a);
+    border-radius: 8px;
+    background: var(--popover, #18181b);
+    color: var(--popover-foreground, #fafafa);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.t3usage-chip:hover .t3usage-popover,
+.t3usage-chip:focus-visible .t3usage-popover {
+    display: grid;
+    gap: 4px;
+}
+
+.t3usage-popover-title {
+    font-weight: 600;
+}
+
+.t3usage-popover-footer {
+    margin-top: 2px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border, #27272a);
+    color: var(--muted-foreground, #a1a1aa);
+    font-size: 11px;
+}
+
+.t3usage-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+}
+
+.t3usage-row-value {
+    text-align: right;
+}
+
+.t3usage-row-reset {
+    grid-column: 1 / -1;
+    color: var(--muted-foreground, #a1a1aa);
+    font-size: 11px;
+}
+
+/* Narrow windows keep the header for the title. */
+@media (max-width: 900px) {
+    #t3usage-root {
+        display: none;
+    }
+}

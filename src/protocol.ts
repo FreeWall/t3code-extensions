@@ -16,6 +16,28 @@ const SubscribeShellRpc = Rpc.make("orchestration.subscribeShell", {
   stream: true,
 });
 
+/** Server config and provider status stream; the usage bar reads `providers[].usageLimits`. */
+const SubscribeServerConfigRpc = Rpc.make("subscribeServerConfig", {
+  payload: Schema.Struct({}),
+  success: Schema.Unknown,
+  error: Schema.Unknown,
+  stream: true,
+});
+
+/**
+ * Re-probes one provider instance, usage limits included; results arrive as
+ * `providerStatuses`. `refreshModels` is the app's explicit-refresh flag: it also
+ * drops the instance's probe cache (Claude keeps `get_usage` for 5 minutes).
+ */
+const ServerRefreshProvidersRpc = Rpc.make("server.refreshProviders", {
+  payload: Schema.Struct({
+    instanceId: Schema.optional(Schema.String),
+    refreshModels: Schema.optional(Schema.Boolean),
+  }),
+  success: Schema.Unknown,
+  error: Schema.Unknown,
+});
+
 const AssetsCreateUrlRpc = Rpc.make("assets.createUrl", {
   payload: Schema.Struct({ resource: Schema.Unknown }),
   success: Schema.Unknown,
@@ -45,6 +67,8 @@ const ProjectsWriteFileRpc = Rpc.make("projects.writeFile", {
 
 export const RailRpcGroup = RpcGroup.make(
   SubscribeShellRpc,
+  SubscribeServerConfigRpc,
+  ServerRefreshProvidersRpc,
   AssetsCreateUrlRpc,
   FilesystemBrowseRpc,
   ProjectsReadFileRpc,

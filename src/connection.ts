@@ -7,8 +7,16 @@ import { Socket } from "effect/unstable/socket";
 import { ORCHESTRATION_PROTOCOL_VERSION, RailRpcGroup } from "./protocol.ts";
 import { attachSettingsFile, type SettingsFile } from "./settings.ts";
 import { applyShellItem, setEnvironmentId, setStatus } from "./store.ts";
+import { applyServerConfigItem, getUsage, setLimitsRefresher } from "./usage/limits.ts";
 
 const RECONNECT_DELAY = "3 seconds";
+/**
+ * A bit over the server's 5 minute Claude probe cache, so each tick reads a fresh
+ * `get_usage` instead of the cached one.
+ */
+const LIMITS_REFRESH_INTERVAL = "6 minutes";
+/** Lets the config snapshot name the instances that report limits before the first refresh. */
+const LIMITS_FIRST_REFRESH_DELAY = "5 seconds";
 const SETTINGS_DIRECTORY = ".config/t3code-rail";
 const SETTINGS_FILE = "settings.json";
 
@@ -95,6 +103,25 @@ export async function createAssetUrl(resource: unknown): Promise<string | null> 
 type RailClient = RpcClient.FromGroup<typeof RailRpcGroup>;
 
 /**
+ * The server probes usage limits only when asked (the Usage page does it on open), so
+ * without this the header would show whatever the last probe saw. Only instances that
+ * report limits are refreshed, and only while the window is visible.
+ */
+function refreshLimits(client: RailClient) {
+  return Effect.suspend(() =>
+    document.visibilityState === "visible"
+      ? Effect.forEach(
+          getUsage(),
+          (provider) => client["server.refreshProviders"]({ instanceId: provider.instanceId }),
+          { concurrency: "unbounded", discard: true },
+        )
+      : Effect.void,
+  ).pipe(
+    Effect.catchCause((cause) => Effect.sync(() => console.warn("[rail] limits refresh failed", cause))),
+  );
+}
+
+/**
  * The settings file in the server's home directory. A missing file fails `realpath`
  * before anything is opened; any other read failure is surfaced, so the rail never
  * overwrites a file it couldn't read.
@@ -139,10 +166,30 @@ const session = Effect.gen(function* () {
   yield* Effect.gen(function* () {
     const client = yield* RpcClient.make(RailRpcGroup);
     createUrl = (resource) => Effect.runPromise(client["assets.createUrl"]({ resource }));
+    // A click is an explicit request, so it bypasses the probe cache like the app's
+    // own "refresh models"; the background loop doesn't, to keep it cheap.
+    setLimitsRefresher((instanceId) =>
+      Effect.runPromise(
+        Effect.asVoid(client["server.refreshProviders"]({ instanceId, refreshModels: true })),
+      ),
+    );
     yield* settingsFile(client).pipe(
       Effect.tap((file) => Effect.sync(() => attachSettingsFile(file))),
       Effect.catchCause((cause) =>
         Effect.sync(() => console.warn("[rail] settings file unavailable", cause)),
+      ),
+      Effect.forkScoped,
+    );
+    yield* client["subscribeServerConfig"]({}).pipe(
+      Stream.runForEach((item) => Effect.sync(() => applyServerConfigItem(item))),
+      Effect.catchCause((cause) =>
+        Effect.sync(() => console.warn("[rail] server config stream ended", cause)),
+      ),
+      Effect.forkScoped,
+    );
+    yield* Effect.sleep(LIMITS_FIRST_REFRESH_DELAY).pipe(
+      Effect.andThen(
+        Effect.forever(refreshLimits(client).pipe(Effect.andThen(Effect.sleep(LIMITS_REFRESH_INTERVAL)))),
       ),
       Effect.forkScoped,
     );
@@ -161,6 +208,7 @@ const session = Effect.gen(function* () {
   Effect.ensuring(
     Effect.sync(() => {
       createUrl = null;
+      setLimitsRefresher(null);
       attachSettingsFile(null);
       setStatus("offline");
     }),

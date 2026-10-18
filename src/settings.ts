@@ -12,6 +12,8 @@ export interface RailSettings {
   readonly projectOrder: ReadonlyArray<string>;
   /** Project ids left off the rail; the app's own project picker still lists them. */
   readonly hiddenProjects: ReadonlyArray<string>;
+  /** Provider instance ids in the order dragged on the header usage bar. */
+  readonly usageOrder: ReadonlyArray<string>;
 }
 
 /** Reads and writes the settings file; `read` resolves null when it doesn't exist. */
@@ -44,6 +46,7 @@ const toSettings = (raw: Json): RailSettings => ({
   projectSort: raw.projectSort === "app" ? "app" : "manual",
   projectOrder: strings(raw.projectOrder),
   hiddenProjects: strings(raw.hiddenProjects),
+  usageOrder: strings(raw.usageOrder),
 });
 
 function legacyOrder(): string[] {

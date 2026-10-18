@@ -22,7 +22,8 @@ Order and hidden projects live in `~/.config/t3code-rail/settings.json`:
 {
   "projectSort": "manual",
   "projectOrder": ["<project id>", "..."],
-  "hiddenProjects": ["<project id>"]
+  "hiddenProjects": ["<project id>"],
+  "usageOrder": ["<provider instance id>", "..."]
 }
 ```
 
@@ -30,6 +31,8 @@ The file is read through the backend (`projects.readFile` / `projects.writeFile`
 itself can't touch the disk. It is read once when the app starts, so hand edits need a window reload;
 keys the rail doesn't know are kept. A copy in `localStorage` covers the
 moment before the socket is up, and changes made while offline are written once it reconnects.
+
+`usageOrder` is the drag order of the provider chips in the header usage bar.
 
 `projectSort` is `"manual"` (the rail's own `projectOrder`) or `"app"`, which mirrors the sidebar's
 "Sort projects" choice: last user message, created at, or the sidebar's manual drag order. The rail
