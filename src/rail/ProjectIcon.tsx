@@ -2,8 +2,8 @@ import { icons, type IconNode } from "lucide";
 import { createElement } from "preact";
 import { useEffect, useState } from "preact/hooks";
 
-import { createAssetUrl } from "./connection.ts";
-import type { Project } from "./store.ts";
+import { createAssetUrl } from "../connection.ts";
+import type { Project } from "../store.ts";
 
 /** Tailwind -400 shades, matching the app's dark-theme project icon colors. */
 const COLORS: Record<string, string> = {

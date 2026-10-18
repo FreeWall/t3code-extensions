@@ -2,7 +2,7 @@ import * as Schema from "effect/Schema";
 import { Rpc, RpcGroup } from "effect/unstable/rpc";
 
 /**
- * The server RPCs the rail uses, mirrored from `packages/contracts/src/rpc.ts`.
+ * The server RPCs the extensions use, mirrored from `packages/contracts/src/rpc.ts`.
  * Only the tags and payload shapes have to match the wire. Results stay `Unknown`
  * so new shell fields in a nightly don't break decoding.
  */
@@ -44,7 +44,7 @@ const AssetsCreateUrlRpc = Rpc.make("assets.createUrl", {
   error: Schema.Unknown,
 });
 
-/** `~` expands here, so it tells the rail where the server's home directory is. */
+/** `~` expands here, so it tells us where the server's home directory is. */
 const FilesystemBrowseRpc = Rpc.make("filesystem.browse", {
   payload: Schema.Struct({ partialPath: Schema.String }),
   success: Schema.Unknown,
@@ -65,7 +65,7 @@ const ProjectsWriteFileRpc = Rpc.make("projects.writeFile", {
   error: Schema.Unknown,
 });
 
-export const RailRpcGroup = RpcGroup.make(
+export const ServerRpcGroup = RpcGroup.make(
   SubscribeShellRpc,
   SubscribeServerConfigRpc,
   ServerRefreshProvidersRpc,

@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "preact/compat";
 
-import { getSettings, subscribeSettings, updateSettings } from "../settings.ts";
+import { usageSettings } from "./settings.ts";
 
 // https://github.com/pingdotgg/t3code/discussions/11563
 
@@ -136,7 +136,7 @@ function ProviderChip({ provider, now, dragging, slotRef, onPointerDown }: ChipP
     if (busy) return;
     setBusy(true);
     refreshProvider(provider.instanceId)
-      .catch((error: unknown) => console.warn("[rail] limits refresh failed", error))
+      .catch((error: unknown) => console.warn("[t3ext] limits refresh failed", error))
       .finally(() => setBusy(false));
   };
   const color = DRIVER_COLORS[provider.driver] ?? provider.accentColor ?? "currentColor";
@@ -225,7 +225,7 @@ const DRAG_THRESHOLD = 4;
 
 export function UsageBar() {
   const providers = useSyncExternalStore(subscribeUsage, getUsage);
-  const settings = useSyncExternalStore(subscribeSettings, getSettings);
+  const settings = useSyncExternalStore(usageSettings.subscribe, usageSettings.get);
   const now = useNow();
   // While dragging, the order the bar previews; saved on release.
   const [drag, setDrag] = useState<{ id: string; order: string[] } | null>(null);
@@ -240,9 +240,9 @@ export function UsageBar() {
     () =>
       orderProviders(
         providers.filter((provider) => provider.windows.length > 0),
-        settings.usageOrder,
+        settings.order,
       ),
-    [providers, settings.usageOrder],
+    [providers, settings.order],
   );
   const shown = useMemo(
     () => (drag ? orderProviders(allProviders, drag.order) : allProviders),
@@ -297,7 +297,7 @@ export function UsageBar() {
         const visible = allProviders.map((provider) => provider.instanceId);
         dragRef.current = {
           id,
-          order: [...visible, ...settings.usageOrder.filter((saved) => !visible.includes(saved))],
+          order: [...visible, ...settings.order.filter((saved) => !visible.includes(saved))],
         };
         setDrag(dragRef.current);
       }
@@ -312,7 +312,7 @@ export function UsageBar() {
       document.removeEventListener("keydown", escape, true);
       if (!pointer.current) return;
       pointer.current = null;
-      if (save && dragRef.current) updateSettings({ usageOrder: dragRef.current.order });
+      if (save && dragRef.current) usageSettings.update({ order: dragRef.current.order });
       dragRef.current = null;
       setDrag(null);
       // The release would also click (refresh) the chip under it.

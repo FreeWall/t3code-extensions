@@ -1,11 +1,11 @@
 {
-  "name": "t3code-rail",
+  "name": "t3code-extensions",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Discord-style project rail injected into the T3 Code nightly as /custom.js.",
+  "description": "Custom extensions for the T3 Code nightly (project rail, usage bar), injected as /custom.js.",
   "scripts": {
-    "build": "esbuild src/main.tsx --bundle --format=esm --target=es2022 --jsx=automatic --jsx-import-source=preact --loader:.css=text --minify --sourcemap --outfile=dist/custom.js",
+    "build": "esbuild src/main.ts --bundle --format=esm --target=es2022 --jsx=automatic --jsx-import-source=preact --loader:.css=text --minify --sourcemap --outfile=dist/custom.js",
     "watch": "npm run build -- --watch",
     "typecheck": "tsc --noEmit"
   },

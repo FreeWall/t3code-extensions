@@ -1,7 +1,9 @@
 /**
- * Shell state for the rail: the projects and active threads from
- * `orchestration.subscribeShell`, reduced to the few fields the rail reads.
+ * Shell state: the projects and active threads from
+ * `orchestration.subscribeShell`, reduced to the few fields extensions read.
  */
+
+import { type Json, record, string } from "./json.ts";
 
 export type ProjectIcon =
   | { readonly kind: "lucide"; readonly name: string; readonly color: string | undefined }
@@ -33,18 +35,12 @@ export interface Thread {
 
 export type ConnectionStatus = "connecting" | "live" | "offline";
 
-export interface RailState {
+export interface ShellState {
   readonly status: ConnectionStatus;
   readonly environmentId: string | null;
   readonly projects: ReadonlyMap<string, Project>;
   readonly threads: ReadonlyMap<string, Thread>;
 }
-
-type Json = Record<string, unknown>;
-
-const record = (value: unknown): Json | undefined =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : undefined;
-const string = (value: unknown): string | undefined => (typeof value === "string" ? value : undefined);
 
 /**
  * Decodes the wire icon like `ProjectIconOverride` in the contracts: a monogram
@@ -124,7 +120,7 @@ function toThread(value: unknown): Thread | undefined {
   };
 }
 
-let state: RailState = {
+let state: ShellState = {
   status: "connecting",
   environmentId: null,
   projects: new Map(),
@@ -132,12 +128,12 @@ let state: RailState = {
 };
 const listeners = new Set<() => void>();
 
-function set(next: Partial<RailState>): void {
+function set(next: Partial<ShellState>): void {
   state = { ...state, ...next };
   for (const listener of listeners) listener();
 }
 
-export const getState = (): RailState => state;
+export const getState = (): ShellState => state;
 
 export function subscribe(listener: () => void): () => void {
   listeners.add(listener);
@@ -156,7 +152,7 @@ export function applyShellItem(item: unknown): void {
   switch (string(raw?.kind)) {
     case "snapshot": {
       // Enrichment refreshes carry only the projects whose repository identity just
-      // resolved and no threads; they patch identity, which the rail doesn't read.
+      // resolved and no threads; they patch identity, which no extension reads.
       if (raw?.resolvedRepositoryIdentityRoots !== undefined) return;
       const snapshot = record(raw?.snapshot);
       const projects = new Map<string, Project>();

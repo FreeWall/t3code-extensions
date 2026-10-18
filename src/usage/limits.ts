@@ -4,6 +4,8 @@
  * the same snapshots the app's Usage → Limits view reads.
  */
 
+import { type Json, record, string } from "../json.ts";
+
 export type WindowKind = "session" | "weekly" | "monthly" | "other";
 
 export interface UsageWindow {
@@ -29,12 +31,6 @@ export interface ProviderUsage {
   /** Why there are no windows (API key account, failed probe); null when there are. */
   readonly notice: string | null;
 }
-
-type Json = Record<string, unknown>;
-
-const record = (value: unknown): Json | undefined =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : undefined;
-const string = (value: unknown): string | undefined => (typeof value === "string" ? value : undefined);
 
 /** `providerDriverMeta.ts` labels; unknown drivers fall back to their slug. */
 const DRIVER_LABELS: Record<string, string> = {

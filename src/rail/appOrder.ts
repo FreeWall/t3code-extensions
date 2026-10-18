@@ -5,7 +5,7 @@
  * localStorage. The sorting follows `sortProjectsForSidebar` in `Sidebar.logic.ts`.
  */
 
-import type { Project, Thread } from "./store.ts";
+import type { Project, Thread } from "../store.ts";
 
 export type AppSortOrder = "updated_at" | "created_at" | "manual";
 

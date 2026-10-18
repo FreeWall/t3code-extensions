@@ -1,20 +1,12 @@
 /**
- * Rail settings, kept in `~/.config/t3code-rail/settings.json`. The page can't touch
+ * Extension settings, kept in `~/.config/t3code-extensions/settings.json` with one
+ * object per extension (`{ "rail": {...}, "usage": {...} }`). The page can't touch
  * the disk, so the file goes through the backend's `projects.readFile`/`writeFile`
- * (see `connection.ts`). A localStorage copy lets the rail render the last known
+ * (see `connection.ts`). A localStorage copy lets extensions render the last known
  * settings before the socket is up; the file wins once it has been read.
  */
 
-export interface RailSettings {
-  /** "app" follows the sidebar's own project order instead of `projectOrder`. */
-  readonly projectSort: "manual" | "app";
-  /** Project ids in the order dragged on the rail. */
-  readonly projectOrder: ReadonlyArray<string>;
-  /** Project ids left off the rail; the app's own project picker still lists them. */
-  readonly hiddenProjects: ReadonlyArray<string>;
-  /** Provider instance ids in the order dragged on the header usage bar. */
-  readonly usageOrder: ReadonlyArray<string>;
-}
+import { type Json, record } from "./json.ts";
 
 /** Reads and writes the settings file; `read` resolves null when it doesn't exist. */
 export interface SettingsFile {
@@ -23,16 +15,7 @@ export interface SettingsFile {
   readonly write: (contents: string) => Promise<void>;
 }
 
-const CACHE_KEY = "t3rail:settings";
-/** Where the drag order lived before the settings file. */
-const LEGACY_ORDER_KEY = "t3rail:project-order";
-
-type Json = Record<string, unknown>;
-
-const record = (value: unknown): Json | undefined =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : undefined;
-const strings = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+const CACHE_KEY = "t3ext:settings";
 
 function parse(text: string | null): Json | undefined {
   try {
@@ -42,24 +25,8 @@ function parse(text: string | null): Json | undefined {
   }
 }
 
-const toSettings = (raw: Json): RailSettings => ({
-  projectSort: raw.projectSort === "app" ? "app" : "manual",
-  projectOrder: strings(raw.projectOrder),
-  hiddenProjects: strings(raw.hiddenProjects),
-  usageOrder: strings(raw.usageOrder),
-});
-
-function legacyOrder(): string[] {
-  try {
-    return strings(JSON.parse(localStorage.getItem(LEGACY_ORDER_KEY) ?? "[]"));
-  } catch {
-    return [];
-  }
-}
-
-/** Keys the rail doesn't know survive a write, so a hand edit isn't lost. */
-let raw: Json = parse(localStorage.getItem(CACHE_KEY)) ?? { projectOrder: legacyOrder() };
-let settings = toSettings(raw);
+/** Keys no extension knows survive a write, so a hand edit isn't lost. */
+let raw: Json = parse(localStorage.getItem(CACHE_KEY)) ?? {};
 let file: SettingsFile | null = null;
 /** The file is read once per page load; later sessions only write to it. */
 let loaded = false;
@@ -70,7 +37,6 @@ const listeners = new Set<() => void>();
 
 function apply(next: Json): void {
   raw = next;
-  settings = toSettings(next);
   localStorage.setItem(CACHE_KEY, JSON.stringify(next));
   for (const listener of listeners) listener();
 }
@@ -90,24 +56,42 @@ function save(): void {
       },
       (error) => {
         unsaved = true;
-        console.warn("[rail] could not save settings", error);
+        console.warn("[t3ext] could not save settings", error);
       },
     );
 }
-
-export const getSettings = (): RailSettings => settings;
 
 export function subscribeSettings(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
-export function updateSettings(patch: Partial<RailSettings>): void {
-  apply({ ...raw, ...patch });
-  save();
+export const settingsPath = (): string | null => file?.path ?? null;
+
+export interface SettingsSection<T> {
+  /** Stable between changes to the section, so it works with `useSyncExternalStore`. */
+  readonly get: () => T;
+  readonly subscribe: (listener: () => void) => () => void;
+  readonly update: (patch: Partial<T>) => void;
 }
 
-export const settingsPath = (): string | null => file?.path ?? null;
+/** One extension's typed slice of the file, under `key`; `decode` fills in defaults. */
+export function settingsSection<T>(key: string, decode: (raw: Json) => T): SettingsSection<T> {
+  let cached: { readonly source: unknown; readonly value: T } | undefined;
+  return {
+    get: () => {
+      if (cached === undefined || cached.source !== raw[key]) {
+        cached = { source: raw[key], value: decode(record(raw[key]) ?? {}) };
+      }
+      return cached.value;
+    },
+    subscribe: subscribeSettings,
+    update: (patch) => {
+      apply({ ...raw, [key]: { ...record(raw[key]), ...patch } });
+      save();
+    },
+  };
+}
 
 /** Reads the file, picking up hand edits; unsaved local changes win over it. */
 async function load(target: SettingsFile): Promise<void> {
@@ -119,7 +103,7 @@ async function load(target: SettingsFile): Promise<void> {
     save();
   } else if (parsed === undefined) {
     // Don't overwrite a file the user is halfway through editing.
-    console.warn(`[rail] ${target.path} is not a JSON object; keeping the current settings`);
+    console.warn(`[t3ext] ${target.path} is not a JSON object; keeping the current settings`);
   } else if (JSON.stringify(parsed) !== JSON.stringify(raw)) {
     apply(parsed);
   }
@@ -137,6 +121,6 @@ export function attachSettingsFile(target: SettingsFile | null): void {
   void load(target).catch((error) => {
     // An unreadable file must not be replaced with defaults.
     if (file === target) file = null;
-    console.warn("[rail] could not read settings", error);
+    console.warn("[t3ext] could not read settings", error);
   });
 }

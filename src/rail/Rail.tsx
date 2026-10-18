@@ -9,12 +9,12 @@ import {
 } from "preact/compat";
 
 import { getAppOrder, sortLikeApp, subscribeAppOrder, watchAppOrder } from "./appOrder.ts";
-import { activeRoute, navigate, readScopeLabel, selectScope, watchScope } from "./app.ts";
+import { activeRoute, navigate, readScopeLabel, selectScope, watchScope } from "../app.ts";
 import { getDrafts, subscribeDrafts, type Draft } from "./drafts.ts";
 import { ProjectIcon } from "./ProjectIcon.tsx";
-import { getSettings, subscribeSettings, updateSettings } from "./settings.ts";
+import { railSettings } from "./settings.ts";
 import { SettingsPanel } from "./SettingsPanel.tsx";
-import { getState, subscribe, type Project, type Thread } from "./store.ts";
+import { getState, subscribe, type Project, type Thread } from "../store.ts";
 
 interface ProjectActivity {
   readonly working: number;
@@ -129,7 +129,7 @@ export function Rail() {
   const state = useSyncExternalStore(subscribe, getState);
   const drafts = useSyncExternalStore(subscribeDrafts, getDrafts);
   const { scopeLabel, route } = useAppLocation();
-  const settings = useSyncExternalStore(subscribeSettings, getSettings);
+  const settings = useSyncExternalStore(railSettings.subscribe, railSettings.get);
   // While dragging, the order the rail previews; saved on release.
   const [drag, setDrag] = useState<{ id: string; order: string[] } | null>(null);
   // Read by the document listeners, which outlive a render.
@@ -230,7 +230,7 @@ export function Rail() {
       document.removeEventListener("keydown", escape, true);
       if (!pointer.current) return;
       pointer.current = null;
-      if (save && dragRef.current) updateSettings({ projectOrder: dragRef.current.order });
+      if (save && dragRef.current) railSettings.update({ projectOrder: dragRef.current.order });
       dragRef.current = null;
       setDrag(null);
       // The release would also click the project under it.

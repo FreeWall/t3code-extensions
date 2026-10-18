@@ -4,6 +4,8 @@
  * the rail re-reads the key whenever the app writes it.
  */
 
+import { type Json, record } from "../json.ts";
+
 const STORAGE_KEY = "t3code:composer-drafts:v1";
 
 export interface Draft {
@@ -14,10 +16,6 @@ export interface Draft {
   readonly projectId: string | null;
 }
 
-type Json = Record<string, unknown>;
-
-const record = (value: unknown): Json | undefined =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : undefined;
 const nonEmpty = (value: unknown): boolean => Array.isArray(value) && value.length > 0;
 
 /** Same fields as `composerDraftHasUserContent`; `attachments` is the persisted image list. */

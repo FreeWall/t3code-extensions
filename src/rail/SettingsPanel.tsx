@@ -1,8 +1,9 @@
 import { useEffect, useRef, useSyncExternalStore } from "preact/compat";
 
 import { ProjectIcon } from "./ProjectIcon.tsx";
-import { getSettings, settingsPath, subscribeSettings, updateSettings } from "./settings.ts";
-import type { Project } from "./store.ts";
+import { settingsPath, subscribeSettings } from "../settings.ts";
+import { railSettings } from "./settings.ts";
+import type { Project } from "../store.ts";
 
 /** Popover next to the rail; closes on Escape or a click outside it and its toggle. */
 export function SettingsPanel({
@@ -14,7 +15,7 @@ export function SettingsPanel({
   live: boolean;
   onClose: () => void;
 }) {
-  const settings = useSyncExternalStore(subscribeSettings, getSettings);
+  const settings = useSyncExternalStore(railSettings.subscribe, railSettings.get);
   const path = useSyncExternalStore(subscribeSettings, settingsPath);
   const panel = useRef<HTMLDivElement>(null);
   const hidden = new Set(settings.hiddenProjects);
@@ -43,12 +44,12 @@ export function SettingsPanel({
     const next = index + direction;
     if (next < 0 || next >= ids.length) return;
     [ids[index], ids[next]] = [ids[next]!, ids[index]!];
-    updateSettings({ projectOrder: ids });
+    railSettings.update({ projectOrder: ids });
   };
 
   const setVisible = (id: string, visible: boolean) => {
     const others = settings.hiddenProjects.filter((other) => other !== id);
-    updateSettings({ hiddenProjects: visible ? others : [...others, id] });
+    railSettings.update({ hiddenProjects: visible ? others : [...others, id] });
   };
 
   return (
@@ -67,7 +68,7 @@ export function SettingsPanel({
             role="radio"
             aria-checked={settings.projectSort === value}
             title={title}
-            onClick={() => updateSettings({ projectSort: value })}
+            onClick={() => railSettings.update({ projectSort: value })}
           >
             {label}
           </button>
