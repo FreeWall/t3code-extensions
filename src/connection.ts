@@ -1,15 +1,15 @@
 import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Stream from "effect/Stream";
 import { RpcClient, RpcSerialization } from "effect/unstable/rpc";
 import { Socket } from "effect/unstable/socket";
 
 import { ORCHESTRATION_PROTOCOL_VERSION, ServerRpcGroup } from "./protocol.ts";
-import { attachSettingsFile, type SettingsFile } from "./settings.ts";
+import { attachSettingsFile, SETTINGS_DIRECTORY, type SettingsFile } from "./settings.ts";
 import { applyShellItem, setEnvironmentId, setStatus } from "./store.ts";
 
 const RECONNECT_DELAY = "3 seconds";
-const SETTINGS_DIRECTORY = ".config/t3code-extensions";
 const SETTINGS_FILE = "settings.json";
 
 interface Endpoint {
@@ -96,11 +96,32 @@ export type ServerClient = RpcClient.FromGroup<typeof ServerRpcGroup>;
 
 /** Runs for as long as a socket is up; interrupted when it drops. */
 export type SessionHandler = (client: ServerClient) => Effect.Effect<void>;
-const sessionHandlers: SessionHandler[] = [];
+const sessionHandlers = new Set<SessionHandler>();
+/** Handlers running on the current socket; empty while offline. */
+const running = new Map<SessionHandler, Fiber.Fiber<void>>();
+let liveClient: ServerClient | null = null;
 
-/** Lets an extension use the socket; call before `connect`. */
-export const onSession = (handler: SessionHandler): void => {
-  sessionHandlers.push(handler);
+const startHandler = (handler: SessionHandler): void => {
+  if (liveClient !== null) running.set(handler, Effect.runFork(handler(liveClient)));
+};
+
+const stopHandler = (handler: SessionHandler): Effect.Effect<void> => {
+  const fiber = running.get(handler);
+  running.delete(handler);
+  return fiber ? Fiber.interrupt(fiber) : Effect.void;
+};
+
+/**
+ * Lets an extension use the socket: the handler runs on every session, starting
+ * right away when one is up. Returns what stops it, for an extension switched off.
+ */
+export const onSession = (handler: SessionHandler): (() => void) => {
+  sessionHandlers.add(handler);
+  startHandler(handler);
+  return () => {
+    sessionHandlers.delete(handler);
+    Effect.runFork(stopHandler(handler));
+  };
 };
 
 /**
@@ -155,7 +176,17 @@ const session = Effect.gen(function* () {
       ),
       Effect.forkScoped,
     );
-    for (const handler of sessionHandlers) yield* Effect.forkScoped(handler(client));
+    yield* Effect.acquireRelease(
+      Effect.sync(() => {
+        liveClient = client;
+        for (const handler of sessionHandlers) startHandler(handler);
+      }),
+      () =>
+        Effect.suspend(() => {
+          liveClient = null;
+          return Effect.forEach([...running.keys()], stopHandler, { discard: true });
+        }),
+    );
     yield* client["orchestration.subscribeShell"]({ requestCompletionMarker: true }).pipe(
       Stream.runForEach((item) =>
         Effect.sync(() => {

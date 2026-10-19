@@ -10,9 +10,10 @@ into one script injected into the app as `/custom.js`.
 
 Shared code lives in `src/`: the backend connection (`connection.ts`, `protocol.ts`), the shell
 projection of projects and threads (`store.ts`), app DOM helpers (`app.ts`), and settings
-(`settings.ts`). Each extension exports an `Extension` (`{ name, styles, mount }`) from its
-`index.ts`, and `src/main.ts` mounts the list. An extension that needs the socket registers
-with `onSession`.
+(`settings.ts`). Each extension exports an `Extension` (`{ name, title, description, icon,
+styles, mount, Settings? }`) from its `index.ts` and is listed in `src/host.ts`, which mounts the ones
+switched on. `mount` returns its cleanup, so an extension can be switched off without a reload.
+An extension that needs the socket registers with `onSession`, which also returns a stop.
 
 ## Project rail
 
@@ -24,39 +25,57 @@ One icon per project:
 - An amber pen marks a project with an unsent composer draft; clicking it opens the draft.
 - A spinning ring shows a project with a running agent.
 - Projects can be reordered by drag and drop, or follow the app sidebar's own sort.
-- The gear at the bottom opens the rail settings: pick the order, move projects up and down, and
-  switch a project off to hide it from the rail. It stays in the app's own project picker.
+- The gear at the bottom opens the rail's section of the Extensions settings: pick the order, move
+  projects up and down, and switch a project off to hide it from the rail. It stays in the app's
+  own project picker.
 
 ## Usage bar
 
 A chip per provider instance that reports subscription limits, showing what's left of each window.
 Clicking a chip refreshes it; chips can be reordered by drag and drop. Limits are re-probed every few minutes while the window is
-visible.
+visible. Its settings section picks the chip style (compact %, bars, or both), whether the reset time
+shows, the refresh interval, and which providers appear.
 
 ## Settings
+
+The app's Settings gets an **Extensions** item in its nav (`src/settings-page/`). It switches
+extensions on and off, live, in a list beside the picked extension's own `Settings`, laid out
+like the app's Providers page. The app's settings
+routes are fixed, so the page is drawn over the current section rather than being a route of
+its own.
 
 All extensions share `~/.config/t3code-extensions/settings.json`, one object per extension:
 
 ```json
 {
+  "extensions": {
+    "disabled": ["<extension name>"]
+  },
   "rail": {
     "projectSort": "manual",
     "projectOrder": ["<project id>", "..."],
     "hiddenProjects": ["<project id>"]
   },
   "usage": {
-    "order": ["<provider instance id>", "..."]
+    "order": ["<provider instance id>", "..."],
+    "hiddenProviders": ["<provider instance id>"],
+    "refreshMinutes": 6,
+    "chipStyle": "barsAndPercent",
+    "showReset": true
   }
 }
 ```
 
 The file is read through the backend (`projects.readFile` / `projects.writeFile`), since the page
-itself can't touch the disk. It is read once when the app starts, so hand edits need a window reload;
+itself can't touch the disk. The server only writes inside registered projects, so
+`~/.config/t3code-extensions` has to be added as a project once; the rail leaves it out. It is read once when the app starts, so hand edits need a window reload;
 unknown keys are kept. A copy in `localStorage` covers the moment before the socket is up, and
 changes made while offline are written once it reconnects. Each extension reads its own section
 through `settingsSection(key, decode)`.
 
-`usage.order` is the drag order of the provider chips in the header usage bar.
+`usage.order` is the drag order of the provider chips in the header usage bar. `usage.refreshMinutes`
+is one of 6, 15, 30, or 0 (off: refresh only on click); the default 6 is just over the server's
+5 minute Claude probe cache. `usage.chipStyle` is `"percent"`, `"bars"`, or `"barsAndPercent"`.
 
 `rail.projectSort` is `"manual"` (the rail's own `projectOrder`) or `"app"`, which mirrors the sidebar's
 "Sort projects" choice: last user message, created at, or the sidebar's manual drag order. The rail

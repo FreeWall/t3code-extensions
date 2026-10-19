@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -8,12 +7,12 @@ import {
   useSyncExternalStore,
 } from "preact/compat";
 
-import { getAppOrder, sortLikeApp, subscribeAppOrder, watchAppOrder } from "./appOrder.ts";
 import { activeRoute, navigate, readScopeLabel, selectScope, watchScope } from "../app.ts";
 import { getDrafts, subscribeDrafts, type Draft } from "./drafts.ts";
 import { ProjectIcon } from "./ProjectIcon.tsx";
+import { orderProjects, useOrderedProjects } from "./projects.ts";
+import { isPageOpen, openExtensionSettings, subscribePage } from "../settings-page/state.ts";
 import { railSettings } from "./settings.ts";
-import { SettingsPanel } from "./SettingsPanel.tsx";
 import { getState, subscribe, type Project, type Thread } from "../store.ts";
 
 interface ProjectActivity {
@@ -21,16 +20,6 @@ interface ProjectActivity {
   readonly needsInput: ReadonlyArray<Thread>;
   readonly unread: ReadonlyArray<Thread>;
   readonly drafts: ReadonlyArray<Draft>;
-}
-
-/** Dragged order first, then projects the rail hasn't placed yet, oldest first. */
-function orderProjects(projects: Iterable<Project>, order: ReadonlyArray<string>): Project[] {
-  const rank = new Map(order.map((id, index) => [id, index] as const));
-  return Array.from(projects).sort(
-    (a, b) =>
-      (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) ||
-      a.createdAt.localeCompare(b.createdAt),
-  );
 }
 
 function summarize(
@@ -139,26 +128,10 @@ export function Rail() {
   const pointer = useRef<{ grab: number; clientY: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const slots = useRef(new Map<string, HTMLDivElement>()).current;
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const closeSettings = useCallback(() => setSettingsOpen(false), []);
-  const appOrder = useSyncExternalStore(subscribeAppOrder, getAppOrder);
+  const settingsOpen = useSyncExternalStore(subscribePage, isPageOpen);
   const live = state.status === "live";
   const manual = settings.projectSort === "manual";
-
-  useEffect(() => (manual ? undefined : watchAppOrder()), [manual]);
-
-  const allProjects = useMemo(
-    () =>
-      manual
-        ? orderProjects(state.projects.values(), settings.projectOrder)
-        : sortLikeApp(
-            [...state.projects.values()],
-            state.threads.values(),
-            state.environmentId,
-            appOrder,
-          ),
-    [manual, state.projects, state.threads, state.environmentId, settings.projectOrder, appOrder],
-  );
+  const allProjects = useOrderedProjects();
   const projects = useMemo(() => {
     const hidden = new Set(settings.hiddenProjects);
     const ordered = drag ? orderProjects(allProjects, drag.order) : allProjects;
@@ -336,17 +309,14 @@ export function Rail() {
         type="button"
         class="t3rail-item t3rail-settings-toggle"
         data-active={settingsOpen}
-        title="Rail settings"
-        onClick={() => setSettingsOpen(!settingsOpen)}
+        title="Extension settings"
+        onClick={() => openExtensionSettings("rail")}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
           <circle cx="12" cy="12" r="3" />
         </svg>
       </button>
-      {settingsOpen ? (
-        <SettingsPanel projects={allProjects} live={live} onClose={closeSettings} />
-      ) : null}
     </nav>
   );
 }

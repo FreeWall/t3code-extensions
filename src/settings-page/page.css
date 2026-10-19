@@ -1,0 +1,178 @@
+/* The Extensions page over the app's Settings. Loaded as text by settings-page/index.tsx. */
+
+/* Hide the routed section, and the header's actions that belong to it. */
+html[data-t3ext-page] main[data-slot="sidebar-inset"] > div > :not(header, #t3ext-settings-page),
+html[data-t3ext-page] main[data-slot="sidebar-inset"] > div > header .ms-auto,
+html[data-t3ext-page] nav[aria-label="Settings breadcrumb"] li[aria-current="page"]:not([data-t3ext]) {
+    display: none !important;
+}
+
+#t3ext-settings-page {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* After `SettingsPageContainer` and `WorkspacePageContainer` (readable width). */
+.t3ext-page {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.t3ext-page-body {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 24px 24px 48px;
+}
+
+.t3ext-page-footer {
+    margin: 0;
+    padding: 0 16px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+/* List and detail in one card, after the Providers page (`ProviderSettingsPanel`):
+   side by side once the page is 48rem wide, stacked below that. */
+.t3ext-page-body {
+    container: t3ext-page / inline-size;
+}
+
+.t3ext-split {
+    overflow: hidden;
+    border: 1px solid color-mix(in oklab, var(--contrast-border) 60%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--card) 40%, transparent);
+    color: var(--contrast-foreground);
+}
+
+@container t3ext-page (min-width: 48rem) {
+    .t3ext-split {
+        display: grid;
+        grid-template-columns: 17rem minmax(0, 1fr);
+        height: min(44rem, calc(100dvh - 11rem));
+        min-height: 32rem;
+    }
+
+    .t3ext-split-list,
+    .t3ext-split-detail {
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .t3ext-split-list {
+        border-right: 1px solid color-mix(in oklab, var(--contrast-border) 60%, transparent);
+        border-bottom: 0 !important;
+    }
+}
+
+.t3ext-split-list {
+    border-bottom: 1px solid color-mix(in oklab, var(--contrast-border) 60%, transparent);
+    background: color-mix(in srgb, var(--muted) 10%, transparent);
+}
+
+.t3ext-split-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 72px;
+    padding: 12px 16px;
+    transition: background-color 150ms;
+}
+
+.t3ext-split-item + .t3ext-split-item {
+    border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.t3ext-split-item:hover {
+    background: color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+.t3ext-split-item[data-selected="true"] {
+    background: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+
+.t3ext-split-item[data-enabled="false"]:not([data-selected="true"]):not(:hover) > :not(.t3ext-switch) {
+    opacity: 0.6;
+}
+
+/* Covers the row, under the switch, so the whole row picks the extension. */
+.t3ext-split-select {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.t3ext-split-select:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+}
+
+.t3ext-split-item .t3ext-switch {
+    position: relative;
+    align-self: center;
+}
+
+.t3ext-split-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    color: var(--muted-foreground);
+}
+
+.t3ext-split-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    pointer-events: none;
+}
+
+.t3ext-split-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.t3ext-split-description {
+    color: color-mix(in oklab, var(--contrast-muted-foreground) 80%, transparent);
+    font-size: 12px;
+}
+
+.t3ext-split-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px;
+}
+
+.t3ext-split-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+    padding: 0 16px;
+    color: color-mix(in srgb, var(--contrast-foreground) 70%, transparent);
+    font-size: 14px;
+}
+
+.t3ext-split-heading .t3ext-split-icon {
+    margin-top: 0;
+}
+
+.t3ext-split-empty {
+    margin: 0;
+    padding: 0 16px;
+    color: var(--muted-foreground);
+    font-size: 14px;
+}

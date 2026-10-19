@@ -17,6 +17,15 @@ export interface SettingsFile {
 
 const CACHE_KEY = "t3ext:settings";
 
+/**
+ * Relative to the server's home. The server only writes inside registered projects,
+ * so this directory is added as one; `isSettingsProject` keeps it off the rail.
+ */
+export const SETTINGS_DIRECTORY = ".config/t3code-extensions";
+
+export const isSettingsProject = (workspaceRoot: string): boolean =>
+  workspaceRoot.replace(/\/+$/, "").endsWith(`/${SETTINGS_DIRECTORY}`);
+
 function parse(text: string | null): Json | undefined {
   try {
     return record(JSON.parse(text ?? "null"));

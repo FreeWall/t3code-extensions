@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "preact/compat";
 
-import { usageSettings } from "./settings.ts";
+import { usageSettings, type UsageSettings } from "./settings.ts";
 
 // https://github.com/pingdotgg/t3code/discussions/11563
 
@@ -32,12 +32,6 @@ import { ClaudeIcon, OpenAIIcon } from "./icons.tsx";
 const HEADER_ROW = 'header[data-chat-header] > div:has(> nav[aria-label="Thread breadcrumb"])';
 const TICK_MS = 30_000;
 
-/** How each provider shows in the header, as in the discussion's "Usage meters" setting. */
-type UsageBarVariant = "off" | "bars" | "percent" | "barsAndPercent";
-const VARIANT: UsageBarVariant = "barsAndPercent";
-/** Time until the % window resets, after the % label (`60% · 2h 13m`). */
-const SHOW_RESET = true;
-
 /** Below this much quota left, the bar and number turn red. */
 const LOW_PERCENT = 20;
 
@@ -47,7 +41,7 @@ const DRIVER_COLORS: Record<string, string> = {
   codex: "currentColor",
 };
 
-function ProviderIcon({ provider }: { provider: ProviderUsage }) {
+export function ProviderIcon({ provider }: { provider: ProviderUsage }) {
   switch (provider.driver) {
     case "claudeAgent":
       return <ClaudeIcon class="t3usage-icon" />;
@@ -113,12 +107,13 @@ function Details({ provider, now }: { provider: ProviderUsage; now: number }) {
 interface ChipProps {
   readonly provider: ProviderUsage;
   readonly now: number;
+  readonly settings: UsageSettings;
   readonly dragging: boolean;
   readonly slotRef: (el: HTMLDivElement | null) => void;
   readonly onPointerDown: (event: PointerEvent) => void;
 }
 
-function ProviderChip({ provider, now, dragging, slotRef, onPointerDown }: ChipProps) {
+function ProviderChip({ provider, now, settings, dragging, slotRef, onPointerDown }: ChipProps) {
   // Session (top bar) and weekly (bottom) carry the signal; the rest (per-model, monthly) live in the popover.
   const primary = provider.windows.filter(
     (window) => window.kind === "session" || window.kind === "weekly",
@@ -128,7 +123,7 @@ function ProviderChip({ provider, now, dragging, slotRef, onPointerDown }: ChipP
   const headline = shown.find((window) => window.kind === "session") ?? shown[0];
   const percent = headline ? remainingNow(headline, now) : null;
   const resetIn =
-    SHOW_RESET && percent !== null && headline?.resetsAt != null
+    settings.showReset && percent !== null && headline?.resetsAt != null
       ? formatDuration(headline.resetsAt - now)
       : null;
   const [busy, setBusy] = useState(false);
@@ -159,8 +154,8 @@ function ProviderChip({ provider, now, dragging, slotRef, onPointerDown }: ChipP
       style={{ "--t3usage-color": color }}
     >
       <ProviderIcon provider={provider} />
-      {VARIANT === "bars" || VARIANT === "barsAndPercent" ? <Bars windows={shown} now={now} /> : null}
-      {VARIANT === "percent" || VARIANT === "barsAndPercent" ? (
+      {settings.chipStyle !== "percent" ? <Bars windows={shown} now={now} /> : null}
+      {settings.chipStyle !== "bars" ? (
         <span class="t3usage-value" data-low={percent !== null && percent < LOW_PERCENT}>
           {percent === null ? "–" : `${percent}%`}
         </span>
@@ -181,7 +176,7 @@ function useNow(): number {
 }
 
 /** Dragged order first, then instances not placed yet, in the server's order. */
-function orderProviders(
+export function orderProviders(
   providers: ReadonlyArray<ProviderUsage>,
   order: ReadonlyArray<string>,
 ): ProviderUsage[] {
@@ -239,10 +234,13 @@ export function UsageBar() {
   const allProviders = useMemo(
     () =>
       orderProviders(
-        providers.filter((provider) => provider.windows.length > 0),
+        providers.filter(
+          (provider) =>
+            provider.windows.length > 0 && !settings.hiddenProviders.includes(provider.instanceId),
+        ),
         settings.order,
       ),
-    [providers, settings.order],
+    [providers, settings.order, settings.hiddenProviders],
   );
   const shown = useMemo(
     () => (drag ? orderProviders(allProviders, drag.order) : allProviders),
@@ -333,7 +331,7 @@ export function UsageBar() {
     document.addEventListener("keydown", escape, true);
   };
 
-  if (VARIANT === "off" || shown.length === 0) return null;
+  if (shown.length === 0) return null;
   return (
     <div class="t3usage" ref={barRef} data-dragging={drag !== null} aria-label="Usage limits">
       {shown.map((provider) => (
@@ -341,6 +339,7 @@ export function UsageBar() {
           key={provider.instanceId}
           provider={provider}
           now={now}
+          settings={settings}
           dragging={drag?.id === provider.instanceId}
           slotRef={(el) => {
             if (el) slots.set(provider.instanceId, el);
@@ -357,7 +356,7 @@ export function UsageBar() {
  * Renders once into a detached host and keeps that host inside whichever header row
  * is mounted; React swaps the header per thread and route, the host just moves along.
  */
-export function mountUsageBar(): void {
+export function mountUsageBar(): () => void {
   const host = document.createElement("div");
   host.id = "t3usage-root";
   render(<UsageBar />, host);
@@ -368,8 +367,15 @@ export function mountUsageBar(): void {
     const row = document.querySelector(HEADER_ROW);
     if (row && host.parentElement !== row) row.append(host);
   };
-  new MutationObserver(() => {
+  const observer = new MutationObserver(() => {
     if (frame === 0) frame = requestAnimationFrame(place);
-  }).observe(document.body, { subtree: true, childList: true });
+  });
+  observer.observe(document.body, { subtree: true, childList: true });
   place();
+  return () => {
+    observer.disconnect();
+    cancelAnimationFrame(frame);
+    render(null, host);
+    host.remove();
+  };
 }

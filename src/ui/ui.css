@@ -1,0 +1,133 @@
+/* Shared settings controls (ui/index.tsx), after the app's settings components. */
+
+/* `SettingsGroup`, grouped and divided. */
+.t3ext-group {
+    border: 1px solid color-mix(in oklab, var(--contrast-border) 60%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--card) 40%, transparent);
+    color: var(--contrast-foreground);
+}
+
+.t3ext-group > * + * {
+    border-top: 1px solid color-mix(in oklab, var(--contrast-border) 60%, transparent);
+}
+
+.t3ext-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+}
+
+.t3ext-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.t3ext-row-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.t3ext-row-description {
+    margin-top: 2px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+}
+
+.t3ext-switch {
+    --thumb-size: 16px;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    width: calc(var(--thumb-size) * 2 - 2px);
+    height: calc(var(--thumb-size) + 2px);
+    padding: 2px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--input, #3f3f46);
+    cursor: pointer;
+    transition: background-color 200ms;
+}
+
+.t3ext-switch[aria-checked="true"] {
+    background: var(--primary, #60a5fa);
+}
+
+.t3ext-switch-thumb {
+    width: calc(var(--thumb-size) - 2px);
+    height: calc(var(--thumb-size) - 2px);
+    border-radius: 50%;
+    background: var(--background, #09090b);
+    transition: translate 150ms;
+}
+
+.t3ext-switch[aria-checked="true"] .t3ext-switch-thumb {
+    translate: calc(var(--thumb-size) - 4px) 0;
+}
+
+.t3ext-segmented {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--muted, rgb(255 255 255 / 0.06));
+}
+
+.t3ext-segmented button {
+    height: 26px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted-foreground, #a1a1aa);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.t3ext-segmented button:hover {
+    color: var(--contrast-foreground);
+}
+
+.t3ext-segmented button[aria-checked="true"] {
+    background: var(--background, #18181b);
+    color: var(--contrast-foreground);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+/* Reorder arrows (`MoveButtons`), after the app's model list (`ProviderModelsSection`). */
+.t3ext-move {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted-foreground, #a1a1aa);
+    cursor: pointer;
+}
+
+.t3ext-move:hover:not(:disabled) {
+    background: var(--accent, #27272a);
+    color: var(--contrast-foreground);
+}
+
+.t3ext-move:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.t3ext-move svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
