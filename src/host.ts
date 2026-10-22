@@ -5,11 +5,12 @@
 
 import type { Extension } from "./extension.ts";
 import { strings } from "./json.ts";
+import { newThread } from "./new-thread/index.ts";
 import { rail } from "./rail/index.tsx";
 import { settingsSection } from "./settings.ts";
 import { usage } from "./usage/index.ts";
 
-export const extensions: ReadonlyArray<Extension> = [rail, usage];
+export const extensions: ReadonlyArray<Extension> = [rail, usage, newThread];
 
 export const extensionSettings = settingsSection("extensions", (raw) => ({
   /** Names of switched-off extensions, so a new one starts switched on. */

@@ -1,0 +1,4 @@
+html[data-t3newthread] [data-slot="command-dialog-backdrop"],
+html[data-t3newthread] [data-slot="command-dialog-viewport"] {
+  visibility: hidden;
+}

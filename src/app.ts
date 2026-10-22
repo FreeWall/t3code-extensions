@@ -43,7 +43,7 @@ export function watchScope(onChange: () => void): () => void {
   return () => observer.disconnect();
 }
 
-function waitFor<T>(find: () => T | null | undefined): Promise<T | null> {
+export function waitFor<T>(find: () => T | null | undefined): Promise<T | null> {
   return new Promise((resolve) => {
     const found = find();
     if (found) return resolve(found);

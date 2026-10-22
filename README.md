@@ -7,6 +7,7 @@ into one script injected into the app as `/custom.js`.
 | --- | --- | --- |
 | Project rail | `src/rail/` | Discord-style project rail on the left edge |
 | Usage bar | `src/usage/` | Provider usage limits in the thread header |
+| New thread in filtered project | `src/new-thread/` | Sidebar New thread starts in the project the sidebar is filtered to |
 
 Shared code lives in `src/`: the backend connection (`connection.ts`, `protocol.ts`), the shell
 projection of projects and threads (`store.ts`), app DOM helpers (`app.ts`), and settings
@@ -35,6 +36,14 @@ A chip per provider instance that reports subscription limits, showing what's le
 Clicking a chip refreshes it; chips can be reordered by drag and drop. Limits are re-probed every few minutes while the window is
 visible. Its settings section picks the chip style (compact %, bars, or both), whether the reset time
 shows, the refresh interval, and which providers appear.
+
+## New thread in filtered project
+
+A plain click on the sidebar's New thread button opens the app's "New thread in..." picker. While
+the sidebar is filtered to a project, the extension picks that project in the (hidden) picker, so the
+thread starts there instead of in the viewed thread's project
+([t3code#11895](https://github.com/pingdotgg/t3code/issues/11895)). With "All projects" the picker
+shows as usual. Shift+click does the same while filtered; unfiltered it keeps the app's behavior.
 
 ## Settings
 
