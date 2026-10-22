@@ -80,9 +80,8 @@ html[data-t3ext-page] nav[aria-label="Settings breadcrumb"] li[aria-current="pag
 .t3ext-split-item {
     position: relative;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
-    min-height: 72px;
     padding: 12px 16px;
     transition: background-color 150ms;
 }
@@ -126,7 +125,6 @@ html[data-t3ext-page] nav[aria-label="Settings breadcrumb"] li[aria-current="pag
     flex-shrink: 0;
     width: 16px;
     height: 16px;
-    margin-top: 2px;
     color: var(--muted-foreground);
 }
 
@@ -140,13 +138,28 @@ html[data-t3ext-page] nav[aria-label="Settings breadcrumb"] li[aria-current="pag
 }
 
 .t3ext-split-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 14px;
     font-weight: 500;
 }
 
+.t3ext-split-status,
 .t3ext-split-description {
     color: color-mix(in oklab, var(--contrast-muted-foreground) 80%, transparent);
     font-size: 12px;
+}
+
+.t3ext-split-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.t3ext-split-description {
+    margin: 0;
+    padding: 0 16px;
 }
 
 .t3ext-split-detail {
@@ -164,10 +177,6 @@ html[data-t3ext-page] nav[aria-label="Settings breadcrumb"] li[aria-current="pag
     padding: 0 16px;
     color: color-mix(in srgb, var(--contrast-foreground) 70%, transparent);
     font-size: 14px;
-}
-
-.t3ext-split-heading .t3ext-split-icon {
-    margin-top: 0;
 }
 
 .t3ext-split-empty {

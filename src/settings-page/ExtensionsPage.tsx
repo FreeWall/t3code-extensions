@@ -19,7 +19,7 @@ export function ExtensionsPage() {
       <div class="t3ext-page-body">
         <div class="t3ext-split">
           <div class="t3ext-split-list">
-            {extensions.map(({ name, title, description, icon }) => {
+            {extensions.map(({ name, title, icon }) => {
               const enabled = !disabled.includes(name);
               return (
                 <div
@@ -38,9 +38,7 @@ export function ExtensionsPage() {
                   <Icon node={icon} class="t3ext-split-icon" />
                   <span class="t3ext-split-text">
                     <span class="t3ext-split-title">{title}</span>
-                    <span class="t3ext-split-description">
-                      {enabled ? description : "Disabled"}
-                    </span>
+                    <span class="t3ext-split-status">{enabled ? "Enabled" : "Disabled"}</span>
                   </span>
                   <Switch
                     checked={enabled}
@@ -52,18 +50,21 @@ export function ExtensionsPage() {
             })}
           </div>
           <div class="t3ext-split-detail">
-            <div class="t3ext-split-heading">
-              <Icon node={selected.icon} class="t3ext-split-icon" />
-              {selected.title}
+            <div class="t3ext-split-header">
+              <div class="t3ext-split-heading">
+                <Icon node={selected.icon} class="t3ext-split-icon" />
+                {selected.title}
+              </div>
+              <p class="t3ext-split-description">{selected.description}</p>
             </div>
             {!selectedEnabled ? (
-              <p class="t3ext-split-empty">Switch {selected.title} on to change its settings.</p>
+              <p class="t3ext-split-empty">Disabled</p>
             ) : Settings ? (
               <div class="t3ext-group">
                 <Settings />
               </div>
             ) : (
-              <p class="t3ext-split-empty">{selected.title} has no settings.</p>
+              <p class="t3ext-split-empty">Extension has no settings.</p>
             )}
           </div>
         </div>
