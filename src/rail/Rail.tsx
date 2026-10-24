@@ -229,7 +229,15 @@ export function Rail() {
   };
 
   return (
-    <nav class="t3rail" data-status={state.status} aria-label="Projects">
+    <nav
+      class="t3rail"
+      data-status={state.status}
+      aria-label="Projects"
+      style={{
+        "--t3rail-background": settings.background ?? undefined,
+        "--t3rail-pill-background": settings.pillBackground ?? undefined,
+      }}
+    >
       <button
         type="button"
         class="t3rail-item t3rail-all"

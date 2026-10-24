@@ -5,6 +5,7 @@
 
 import type { IconNode } from "lucide";
 import { createElement, type ComponentChildren } from "preact";
+import { useEffect, useState } from "preact/compat";
 
 export function Icon({ node, class: className }: { node: IconNode; class?: string }) {
   return (
@@ -20,6 +21,16 @@ export function Icon({ node, class: className }: { node: IconNode; class?: strin
     >
       {node.map(([tag, attrs], index) => createElement(tag, { key: index, ...attrs }))}
     </svg>
+  );
+}
+
+/** A titled group of rows, after the app's `SettingsSection`. */
+export function Section({ title, children }: { title?: string; children: ComponentChildren }) {
+  return (
+    <section class="t3ext-section">
+      {title ? <h3 class="t3ext-section-title">{title}</h3> : null}
+      <div class="t3ext-group">{children}</div>
+    </section>
   );
 }
 
@@ -141,5 +152,44 @@ export function Segmented<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+/** Swatch with the native picker, plus a hex field applied once it holds a full `#rrggbb`. */
+export function ColorInput({
+  value,
+  label,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  onChange: (value: `#${string}`) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  const commit = (next: string) => {
+    if (/^#[0-9a-f]{6}$/i.test(next)) onChange(`#${next.slice(1).toLowerCase()}`);
+  };
+  return (
+    <span class="t3ext-color">
+      <input
+        type="color"
+        aria-label={label}
+        value={value}
+        onInput={(event) => commit(event.currentTarget.value)}
+      />
+      <input
+        type="text"
+        aria-label={`${label} hex`}
+        spellcheck={false}
+        maxLength={7}
+        value={text}
+        onInput={(event) => {
+          setText(event.currentTarget.value);
+          commit(event.currentTarget.value);
+        }}
+        onBlur={() => setText(value)}
+      />
+    </span>
   );
 }

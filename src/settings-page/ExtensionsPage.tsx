@@ -60,9 +60,7 @@ export function ExtensionsPage() {
             {!selectedEnabled ? (
               <p class="t3ext-split-empty">Disabled</p>
             ) : Settings ? (
-              <div class="t3ext-group">
-                <Settings />
-              </div>
+              <Settings />
             ) : (
               <p class="t3ext-split-empty">Extension has no settings.</p>
             )}

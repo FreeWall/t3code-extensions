@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "preact/compat";
 
-import { MoveButtons, Row, Segmented, Switch } from "../ui/index.tsx";
+import { MoveButtons, Row, Section, Segmented, Switch } from "../ui/index.tsx";
 import { getUsage, subscribeUsage } from "./limits.ts";
 import { REFRESH_MINUTES, usageSettings, type UsageChipStyle } from "./settings.ts";
 import { orderProviders, ProviderIcon, UsageBar } from "./UsageBar.tsx";
@@ -41,7 +41,7 @@ export function UsageSettings() {
   };
 
   return (
-    <>
+    <Section>
       <Row title="Preview">
         <UsageBar />
       </Row>
@@ -105,6 +105,6 @@ export function UsageSettings() {
       ) : (
         <Row title="Providers" description="No provider reports usage limits yet" />
       )}
-    </>
+    </Section>
   );
 }

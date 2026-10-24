@@ -177,21 +177,23 @@
 }
 
 /* Provider list in the usage bar's section of the Extensions settings page. */
+/* After the app's model list (`ProviderModelsSection`). */
 .t3usage-settings-list {
-    padding: 6px 8px;
+    padding: 12px 8px;
 }
 
 .t3usage-settings-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 8px;
+    height: 28px;
+    padding: 0 8px;
     border-radius: 6px;
     font-size: 14px;
 }
 
 .t3usage-settings-row:hover {
-    background: color-mix(in srgb, var(--muted-foreground, #a1a1aa) 12%, transparent);
+    background: color-mix(in srgb, var(--muted) 30%, transparent);
 }
 
 .t3usage-settings-row[data-hidden="true"] :is(.t3usage-icon, .t3usage-settings-name) {
