@@ -95,17 +95,24 @@ export async function selectScope(label: string | null): Promise<boolean> {
   const trigger = await waitFor(scopeTrigger);
   if (trigger === null) return false;
 
-  const listbox = () => document.querySelector('[role="listbox"]');
-  if (listbox() === null) trigger.click();
+  // Other listboxes can be open on the page (thread views render their own pickers),
+  // so only count the one offering "All projects".
+  const options = (listbox: Element) =>
+    Array.from(listbox.querySelectorAll<HTMLElement>('[role="option"]'));
+  const listbox = () =>
+    Array.from(document.querySelectorAll('[role="listbox"]')).find((candidate) =>
+      options(candidate).some((option) => optionLabel(option) === "All projects"),
+    );
+  if (listbox() === undefined) trigger.click();
   if ((await waitFor(listbox)) === null) {
     press(trigger);
     if ((await waitFor(listbox)) === null) return false;
   }
-  const option = await waitFor(() =>
-    Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find((candidate) =>
-      label === null ? optionLabel(candidate) === "All projects" : optionLabel(candidate) === label,
-    ),
-  );
+  const wanted = label ?? "All projects";
+  const option = await waitFor(() => {
+    const open = listbox();
+    return open && options(open).find((candidate) => optionLabel(candidate) === wanted);
+  });
   if (option === null) {
     (document.activeElement ?? document.body).dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),

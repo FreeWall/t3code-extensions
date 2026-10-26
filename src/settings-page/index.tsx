@@ -2,7 +2,8 @@
  * Adds an "Extensions" section to the app's Settings. The app's settings routes are
  * fixed, so the page isn't a route: a nav item cloned from the app's own opens it
  * over whichever section is showing, and any other nav item, or leaving Settings,
- * closes it. Selectors follow `SettingsSidebarNav.tsx` and `routes/settings.tsx`.
+ * closes it. Selectors follow `SettingsSidebarNav.tsx` and `routes/_chat.settings.tsx`,
+ * where Settings is a modal (`AppRouteModal`) with its own nav column.
  */
 
 import { createElement, Puzzle } from "lucide";
@@ -14,23 +15,28 @@ import { ExtensionsPage } from "./ExtensionsPage.tsx";
 import pageStyles from "./page.css";
 import { isPageOpen, setPageOpen, subscribePage } from "./state.ts";
 
-const NAV = '[data-slot="sidebar-content"] ul[data-slot="sidebar-menu"]:not([role])';
+const SECTIONS = '[data-app-modal] nav[aria-label="Settings sections"]';
+/** The menu of the nav's last group (Maintenance, Labs, About, Archive). */
+const NAV = `${SECTIONS} [role="group"]:last-of-type > ul[data-slot="sidebar-menu"]`;
 const NAV_BUTTON = '[data-slot="sidebar-menu-button"]';
-/** The settings layout's column: the header, then the routed section. */
-const COLUMN = 'main[data-slot="sidebar-inset"] > div';
+/** The settings modal's column: the header, then the routed section. */
+const COLUMN = `${SECTIONS} + div`;
 const BREADCRUMB = 'nav[aria-label="Settings breadcrumb"] ol';
 
 const LABEL = "Extensions";
 
 /** A copy of one of the app's nav items, so it picks up their look. */
 function createNavItem(nav: Element): HTMLElement | null {
-  const item = nav.querySelector(":scope > li")?.cloneNode(true);
+  // A section item, not the compact layout's icon-only search button.
+  const item = nav.querySelector(":scope > li:has(span)")?.cloneNode(true);
   if (!(item instanceof HTMLElement)) return null;
   const button = item.querySelector<HTMLElement>(NAV_BUTTON);
-  if (button === null) return null;
+  const original = button?.querySelector("span");
+  if (!button || !original) return null;
   item.dataset.t3ext = "";
   const label = document.createElement("span");
-  label.className = "truncate";
+  // Keeps the label's `sr-only` on the compact icon rail.
+  label.className = original.className;
   label.textContent = LABEL;
   button.replaceChildren(createElement(Puzzle), label);
   button.addEventListener("click", () => setPageOpen(true));
