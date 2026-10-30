@@ -132,15 +132,22 @@ html[data-t3rail] #root {
 }
 
 /* Running agents: a slow ring around the icon. */
-.t3rail-item[data-working="true"]::after {
+.t3rail-item[data-working="true"]::after,
+.t3rail-item[data-waiting="true"]::after {
     content: "";
     position: absolute;
     inset: 0;
     border: 2px solid transparent;
-    border-top-color: #60a5fa;
+    border-top-color: var(--info-foreground);
     border-radius: inherit;
     animation: t3rail-spin 1.1s linear infinite;
     pointer-events: none;
+}
+
+/* Settled, but subagents still run in the background. */
+.t3rail-item[data-waiting="true"]::after {
+    border: 2px dashed var(--contrast-muted-foreground);
+    animation-duration: 6s;
 }
 
 @keyframes t3rail-spin {

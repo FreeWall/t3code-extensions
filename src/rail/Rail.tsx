@@ -17,6 +17,7 @@ import { getState, subscribe, type Project, type Thread } from "../store.ts";
 
 interface ProjectActivity {
   readonly working: number;
+  readonly waiting: number;
   readonly needsInput: ReadonlyArray<Thread>;
   readonly unread: ReadonlyArray<Thread>;
   readonly drafts: ReadonlyArray<Draft>;
@@ -29,16 +30,19 @@ function summarize(
 ): Map<string, ProjectActivity> {
   const byProject = new Map<
     string,
-    { working: number; needsInput: Thread[]; unread: Thread[]; drafts: Draft[] }
+    { working: number; waiting: number; needsInput: Thread[]; unread: Thread[]; drafts: Draft[] }
   >();
   const entry = (projectId: string) => {
     let found = byProject.get(projectId);
     if (!found) {
-      byProject.set(projectId, (found = { working: 0, needsInput: [], unread: [], drafts: [] }));
+      found = { working: 0, waiting: 0, needsInput: [], unread: [], drafts: [] };
+      byProject.set(projectId, found);
     }
     return found;
   };
   for (const thread of threads.values()) {
+    // Settled with subagents still running; may also be unread.
+    if (thread.waiting) entry(thread.projectId).waiting += 1;
     if (thread.needsInput) entry(thread.projectId).needsInput.push(thread);
     else if (thread.working) entry(thread.projectId).working += 1;
     // The open thread is marked visited a moment after its run finishes; skip it so
@@ -75,6 +79,7 @@ function tooltip(project: Project, activity: ProjectActivity | undefined): strin
   const parts = [project.title];
   if (activity?.needsInput.length) parts.push(`${activity.needsInput.length} waiting for you`);
   if (activity?.working) parts.push(`${activity.working} working`);
+  if (activity?.waiting) parts.push(`${activity.waiting} waiting on background work`);
   if (activity?.unread.length) parts.push(`${activity.unread.length} finished`);
   if (activity?.drafts.length) parts.push(`${activity.drafts.length} unsent draft`);
   return parts.join(" · ");
@@ -275,6 +280,7 @@ export function Rail() {
                 class="t3rail-item"
                 data-active={scopeLabel === project.title}
                 data-working={(entry?.working ?? 0) > 0}
+                data-waiting={!entry?.working && (entry?.waiting ?? 0) > 0}
                 title={tooltip(project, entry)}
                 onClick={() =>
                   void selectScope(scopeLabel === project.title ? null : project.title)

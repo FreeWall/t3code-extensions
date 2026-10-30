@@ -26,6 +26,8 @@ export interface Thread {
   readonly title: string;
   readonly working: boolean;
   readonly needsInput: boolean;
+  /** Run settled, but subagents or other background work still hold it open. */
+  readonly waiting: boolean;
   /** Latest run finished after the thread was last opened. */
   readonly unread: boolean;
   readonly createdAt: string;
@@ -83,6 +85,9 @@ function toProject(value: unknown): Project | undefined {
   };
 }
 
+/** Background work kinds that keep a settled thread "Waiting", as in the app sidebar. */
+const HOLDING_TASK_KINDS = new Set(["subagent", "monitor", "background_task"]);
+
 function toThread(value: unknown): Thread | undefined {
   const raw = record(value);
   const id = string(raw?.id);
@@ -101,12 +106,18 @@ function toThread(value: unknown): Thread | undefined {
     (raw.interactionMode === "plan" &&
       raw.hasActionableProposedPlan === true &&
       raw.activeRunId == null);
+  const working = raw.activeRunId != null && !needsInput;
+  const tasks = Array.isArray(raw.pendingBackgroundTasks) ? raw.pendingBackgroundTasks : [];
   return {
     id,
     projectId,
     title: string(raw.title) ?? "",
-    working: raw.activeRunId != null && !needsInput,
+    working,
     needsInput,
+    waiting:
+      !working &&
+      !needsInput &&
+      tasks.some((task) => HOLDING_TASK_KINDS.has(string(record(task)?.kind) ?? "")),
     // A never-visited thread counts as read, as in the sidebar; otherwise every
     // historical thread would light up.
     unread:
