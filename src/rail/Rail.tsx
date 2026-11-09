@@ -229,8 +229,16 @@ export function Rail() {
     document.addEventListener("keydown", escape, true);
   };
 
-  const openThread = (thread: Thread) => {
-    if (state.environmentId) navigate(`/${state.environmentId}/${thread.id}`);
+  /**
+   * Opening a thread the sidebar filter hides makes the app widen it to all projects,
+   * so a filtered sidebar moves to the thread's project first.
+   */
+  const openInProject = async (project: Project, path: string) => {
+    if (scopeLabel !== null && scopeLabel !== project.title) await selectScope(project.title);
+    navigate(path);
+  };
+  const openThread = (project: Project, thread: Thread) => {
+    if (state.environmentId) void openInProject(project, `/${state.environmentId}/${thread.id}`);
   };
 
   return (
@@ -293,7 +301,7 @@ export function Rail() {
                   type="button"
                   class="t3rail-badge"
                   title={`Open "${attention[0]!.title}"`}
-                  onClick={() => openThread(attention[0]!)}
+                  onClick={() => openThread(project, attention[0]!)}
                 >
                   {attention.length}
                 </button>
@@ -307,7 +315,7 @@ export function Rail() {
                       ? `${entry!.drafts.length} unsent drafts`
                       : "Open unsent draft"
                   }
-                  onClick={() => navigate(draft.path)}
+                  onClick={() => void openInProject(project, draft.path)}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

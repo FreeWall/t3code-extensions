@@ -7,7 +7,7 @@ import { Socket } from "effect/unstable/socket";
 
 import { ORCHESTRATION_PROTOCOL_VERSION, ServerRpcGroup } from "./protocol.ts";
 import { attachSettingsFile, SETTINGS_DIRECTORY, type SettingsFile } from "./settings.ts";
-import { applyShellItem, setEnvironmentId, setStatus } from "./store.ts";
+import { applyShellItem, getState, setEnvironmentId, setStatus } from "./store.ts";
 
 const RECONNECT_DELAY = "3 seconds";
 const SETTINGS_FILE = "settings.json";
@@ -160,6 +160,8 @@ function settingsFile(client: ServerClient) {
 const session = Effect.gen(function* () {
   const target = endpoint!;
   const socketUrl = yield* Effect.promise(() => openSocketUrl(target));
+  // The desktop backend may not be up when the script loads; retry once it answers.
+  if (getState().environmentId === null) void loadEnvironmentId(target).catch(() => undefined);
   const protocol = RpcClient.layerProtocolSocket().pipe(
     Layer.provide(
       Socket.layerWebSocket(socketUrl).pipe(Layer.provide(Socket.layerWebSocketConstructorGlobal)),
@@ -210,6 +212,5 @@ const session = Effect.gen(function* () {
 
 export function connect(): void {
   endpoint = resolveEndpoint();
-  void loadEnvironmentId(endpoint).catch(() => undefined);
   Effect.runFork(Effect.forever(session.pipe(Effect.andThen(Effect.sleep(RECONNECT_DELAY)))));
 }
