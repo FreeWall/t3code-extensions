@@ -137,17 +137,30 @@ export function Rail() {
   const live = state.status === "live";
   const manual = settings.projectSort === "manual";
   const allProjects = useOrderedProjects();
+  const hidden = useMemo(() => new Set(settings.hiddenProjects), [settings.hiddenProjects]);
   const projects = useMemo(() => {
-    const hidden = new Set(settings.hiddenProjects);
     const ordered = drag ? orderProjects(allProjects, drag.order) : allProjects;
     return ordered.filter((project) => !hidden.has(project.id));
-  }, [allProjects, drag, settings.hiddenProjects]);
+  }, [allProjects, drag, hidden]);
   useSlideOnReorder(slots, projects, drag?.id);
   useLayoutEffect(() => follow(), [projects]);
   const activity = useMemo(
     () => summarize(state.threads, drafts, route),
     [state.threads, drafts, route],
   );
+  // Hidden projects have no slot to mark, so "All projects" carries their activity.
+  const hiddenActivity = useMemo(() => {
+    const entries = allProjects.flatMap((project) => {
+      const entry = hidden.has(project.id) ? activity.get(project.id) : undefined;
+      return entry ? [entry] : [];
+    });
+    return {
+      working: entries.some((e) => e.working > 0),
+      waiting: entries.some((e) => e.waiting > 0),
+      attention: [...entries.flatMap((e) => e.needsInput), ...entries.flatMap((e) => e.unread)],
+    };
+  }, [allProjects, hidden, activity]);
+  const hiddenAttention = hiddenActivity.attention;
 
   const listY = (list: HTMLElement, clientY: number) =>
     clientY - list.getBoundingClientRect().top + list.scrollTop;
@@ -251,17 +264,35 @@ export function Rail() {
         "--t3rail-pill-background": settings.pillBackground ?? undefined,
       }}
     >
-      <button
-        type="button"
-        class="t3rail-item t3rail-all"
-        data-active={scopeLabel === null}
-        title="All projects"
-        onClick={() => void selectScope(null)}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        </svg>
-      </button>
+      <div class="t3rail-slot">
+        <button
+          type="button"
+          class="t3rail-item t3rail-all"
+          data-active={scopeLabel === null}
+          data-working={hiddenActivity.working}
+          data-waiting={!hiddenActivity.working && hiddenActivity.waiting}
+          title="All projects"
+          onClick={() => void selectScope(null)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
+        </button>
+        {hiddenAttention.length > 0 ? (
+          <button
+            type="button"
+            class="t3rail-badge"
+            title={`Open "${hiddenAttention[0]!.title}" (hidden project)`}
+            onClick={() => {
+              const thread = hiddenAttention[0]!;
+              const project = state.projects.get(thread.projectId);
+              if (project) openThread(project, thread);
+            }}
+          >
+            {hiddenAttention.length}
+          </button>
+        ) : null}
+      </div>
       <div class="t3rail-separator" />
       <div class="t3rail-list" ref={listRef}>
         {projects.map((project) => {
