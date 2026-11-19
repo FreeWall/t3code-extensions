@@ -65,6 +65,26 @@ const ProjectsWriteFileRpc = Rpc.make("projects.writeFile", {
   error: Schema.Unknown,
 });
 
+/**
+ * Orchestration commands, mirrored from `OrchestrationV2Command` in the contracts;
+ * only the ones extensions send. `thread.tag.set` leaves `updatedAt` alone.
+ */
+const ThreadTagSetCommand = Schema.Struct({
+  type: Schema.Literal("thread.tag.set"),
+  commandId: Schema.String,
+  threadId: Schema.String,
+  tag: Schema.String,
+  tagged: Schema.Boolean,
+});
+
+export type OrchestrationCommand = typeof ThreadTagSetCommand.Type;
+
+const DispatchCommandRpc = Rpc.make("orchestration.dispatchCommand", {
+  payload: ThreadTagSetCommand,
+  success: Schema.Unknown,
+  error: Schema.Unknown,
+});
+
 export const ServerRpcGroup = RpcGroup.make(
   SubscribeShellRpc,
   SubscribeServerConfigRpc,
@@ -73,6 +93,7 @@ export const ServerRpcGroup = RpcGroup.make(
   FilesystemBrowseRpc,
   ProjectsReadFileRpc,
   ProjectsWriteFileRpc,
+  DispatchCommandRpc,
 );
 
 /** Must match the server; the /ws upgrade is rejected with 426 otherwise. */

@@ -1,0 +1,170 @@
+/* Thread tags: row chips, the filter bar under the sidebar search, and the tag editor. */
+
+li[data-t3tags-hidden] {
+    display: none !important;
+}
+
+.t3tags-chip {
+    --t3tag-hue: 260;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    max-width: 96px;
+    height: 16px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: oklch(0.5 0.14 var(--t3tag-hue));
+    background: oklch(0.6 0.14 var(--t3tag-hue) / 0.14);
+    cursor: pointer;
+    user-select: none;
+}
+
+:root.dark .t3tags-chip {
+    color: oklch(0.8 0.11 var(--t3tag-hue));
+    background: oklch(0.7 0.12 var(--t3tag-hue) / 0.18);
+}
+
+.t3tags-chip:hover,
+.t3tags-chip[data-active] {
+    box-shadow: inset 0 0 0 1px oklch(0.6 0.14 var(--t3tag-hue) / 0.6);
+}
+
+/* In a row: right-aligned beside the time, taking over the status slot's auto margin. */
+.t3tags-chips {
+    display: inline-flex;
+    flex-shrink: 1;
+    min-width: 0;
+    gap: 3px;
+    margin-left: auto;
+    overflow: hidden;
+}
+
+.t3tags-chips + * {
+    margin-left: 0 !important;
+}
+
+/* Filter bar */
+
+#t3tags-bar-root:empty {
+    display: none;
+}
+
+.t3tags-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 2px var(--sidebar-content-inset, 8px) 6px;
+}
+
+.t3tags-bar .t3tags-chip {
+    height: 20px;
+    max-width: 140px;
+    font-size: 11.5px;
+}
+
+.t3tags-count {
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+}
+
+.t3tags-chip-icon {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+}
+
+.t3tags-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+    padding: 0 6px;
+    border: 1px dashed var(--border, #3f3f46);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted-foreground, #a1a1aa);
+    font-size: 11.5px;
+    cursor: pointer;
+}
+
+.t3tags-add:hover {
+    color: var(--foreground, #fafafa);
+}
+
+/* Editor popover */
+
+.t3tags-editor {
+    position: fixed;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 220px;
+    max-height: 60vh;
+    padding: 8px;
+    border: 1px solid var(--border, #3f3f46);
+    border-radius: 10px;
+    background: var(--popover, #18181b);
+    color: var(--popover-foreground, var(--foreground, #fafafa));
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+    font-size: 12.5px;
+}
+
+.t3tags-editor-title {
+    padding: 0 2px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.t3tags-editor-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-y: auto;
+}
+
+.t3tags-editor-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 2px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.t3tags-editor-option:hover {
+    background: var(--accent, #27272a);
+}
+
+.t3tags-editor-option .t3tags-chip {
+    max-width: 170px;
+}
+
+.t3tags-editor-input {
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--border, #3f3f46);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    outline: none;
+}
+
+.t3tags-editor-input:focus {
+    border-color: var(--ring, #71717a);
+}
+
+.t3tags-editor-error {
+    color: var(--destructive, #ef4444);
+    font-size: 11.5px;
+}

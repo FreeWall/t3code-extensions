@@ -3,7 +3,7 @@
  * `orchestration.subscribeShell`, reduced to the few fields extensions read.
  */
 
-import { type Json, record, string } from "./json.ts";
+import { record, string, strings } from "./json.ts";
 
 export type ProjectIcon =
   | { readonly kind: "lucide"; readonly name: string; readonly color: string | undefined }
@@ -33,6 +33,8 @@ export interface Thread {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly latestUserMessageAt: string | null;
+  /** Free-form labels (`thread.tag.set`); absent on threads from before tags. */
+  readonly tags: ReadonlyArray<string>;
 }
 
 export type ConnectionStatus = "connecting" | "live" | "offline";
@@ -128,6 +130,7 @@ function toThread(value: unknown): Thread | undefined {
     createdAt: string(raw.createdAt) ?? "",
     updatedAt: string(raw.updatedAt) ?? "",
     latestUserMessageAt: string(raw.latestUserMessageAt) ?? null,
+    tags: strings(raw.tags),
   };
 }
 

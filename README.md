@@ -8,6 +8,7 @@ into one script injected into the app as `/custom.js`.
 | Project rail | `src/rail/` | Discord-style project rail on the left edge |
 | Usage bar | `src/usage/` | Provider usage limits in the thread header |
 | New thread in filtered project | `src/new-thread/` | Sidebar New thread starts in the project the sidebar is filtered to |
+| Thread tags | `src/tags/` | Tag labels on sidebar threads and a filter by tag |
 
 Shared code lives in `src/`: the backend connection (`connection.ts`, `protocol.ts`), the shell
 projection of projects and threads (`store.ts`), app DOM helpers (`app.ts`), and settings
@@ -44,6 +45,21 @@ the sidebar is filtered to a project, the extension picks that project in the (h
 thread starts there instead of in the viewed thread's project
 ([t3code#11895](https://github.com/pingdotgg/t3code/issues/11895)). With "All projects" the picker
 shows as usual. Shift+click does the same while filtered; unfiltered it keeps the app's behavior.
+
+## Thread tags
+
+The server already stores free-form tags on threads (`thread.tag.set`), but the app shows none.
+This extension shows them as colored chips on the sidebar rows, next to the time, and puts a bar of
+tags (with counts) under the sidebar search. The bar follows the sidebar's project filter: with a
+project picked it lists only that project's tags, with "All projects" every tag. Clicking a tag, in
+the bar or on a row, shows only the threads that carry it; clicking it again shows all. The filter
+is remembered per window (`localStorage`) and only applies while the shown project has that tag,
+so switching projects never leaves an empty list. Search results are never filtered.
+
+To tag a thread, Shift+right-click it in the sidebar, or use **+** in the bar for the open thread.
+The popover offers the tags of the thread's project and adds new ones (Enter). The app's native context menu can't
+be extended (`desktopBridge` is frozen), so a plain right-click keeps the app's menu. Tags live on
+the server, so they sync across devices and don't bump the thread's `updatedAt`.
 
 ## Settings
 

@@ -5,7 +5,7 @@ import * as Stream from "effect/Stream";
 import { RpcClient, RpcSerialization } from "effect/unstable/rpc";
 import { Socket } from "effect/unstable/socket";
 
-import { ORCHESTRATION_PROTOCOL_VERSION, ServerRpcGroup } from "./protocol.ts";
+import { type OrchestrationCommand, ORCHESTRATION_PROTOCOL_VERSION, ServerRpcGroup } from "./protocol.ts";
 import { attachSettingsFile, SETTINGS_DIRECTORY, type SettingsFile } from "./settings.ts";
 import { applyShellItem, getState, setEnvironmentId, setStatus } from "./store.ts";
 
@@ -123,6 +123,12 @@ export const onSession = (handler: SessionHandler): (() => void) => {
     Effect.runFork(stopHandler(handler));
   };
 };
+
+/** Sends one orchestration command; rejects while offline or when the server refuses it. */
+export function dispatchCommand(command: OrchestrationCommand): Promise<void> {
+  if (liveClient === null) return Promise.reject(new Error("offline"));
+  return Effect.runPromise(Effect.asVoid(liveClient["orchestration.dispatchCommand"](command)));
+}
 
 /**
  * The settings file in the server's home directory. A missing file fails `realpath`
