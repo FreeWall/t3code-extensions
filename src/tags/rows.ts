@@ -6,7 +6,7 @@
 
 import { readScopeLabel } from "../app.ts";
 import { getState } from "../store.ts";
-import { activeFilter, setFilter, tagHue, threadIdFromRowKey, threadsInScope } from "./tags.ts";
+import { activeFilter, AUTOTAG_TITLE, setFilter, tagHue, threadIdFromRowKey, threadsInScope } from "./tags.ts";
 
 /** The filter as it applies to the project the sidebar shows. */
 const scopedFilter = (): string | null => activeFilter(threadsInScope(getState(), readScopeLabel()));
@@ -38,7 +38,9 @@ function decorate(item: HTMLElement, filter: string | null): void {
   const thread = getState().threads.get(threadIdFromRowKey(item.dataset.threadItem ?? ""));
   const tags = thread?.tags ?? [];
 
-  const hide = filter !== null && thread !== undefined && !tags.includes(filter) && item.closest(SEARCH_RESULTS) === null;
+  const hide =
+    thread?.title === AUTOTAG_TITLE ||
+    (filter !== null && thread !== undefined && !tags.includes(filter) && item.closest(SEARCH_RESULTS) === null);
   if (item.hasAttribute(HIDDEN) !== hide) item.toggleAttribute(HIDDEN, hide);
 
   const existing = item.querySelector<HTMLElement>(".t3tags-chips");

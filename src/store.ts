@@ -33,6 +33,8 @@ export interface Thread {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly latestUserMessageAt: string | null;
+  /** When the latest run finished; null before the first one does. */
+  readonly latestRunCompletedAt: string | null;
   /** Free-form labels (`thread.tag.set`); absent on threads from before tags. */
   readonly tags: ReadonlyArray<string>;
 }
@@ -96,8 +98,10 @@ function toThread(value: unknown): Thread | undefined {
   const projectId = string(raw?.projectId);
   if (raw === undefined || id === undefined || projectId === undefined) return undefined;
   if (raw.deletedAt != null || raw.archivedAt != null) return undefined;
-  // Subagent threads are delegated child work; the sidebar doesn't list them either.
-  if (record(raw.lineage)?.relationshipToParent === "subagent") return undefined;
+  // Subagents and side chats live inside their parent's view; the sidebar lists neither
+  // (`isListedThreadLineage` in the contracts).
+  const lineage = record(raw.lineage);
+  if (lineage?.relationshipToParent === "subagent" || lineage?.sideChat === true) return undefined;
   const completedAt = string(raw.latestRunCompletedAt);
   const visitedAt = string(raw.lastVisitedAt);
   // Same rules as the app sidebar's status pills: an auth refresh isn't the user's
@@ -130,6 +134,7 @@ function toThread(value: unknown): Thread | undefined {
     createdAt: string(raw.createdAt) ?? "",
     updatedAt: string(raw.updatedAt) ?? "",
     latestUserMessageAt: string(raw.latestUserMessageAt) ?? null,
+    latestRunCompletedAt: completedAt ?? null,
     tags: strings(raw.tags),
   };
 }

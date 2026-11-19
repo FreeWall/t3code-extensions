@@ -168,3 +168,102 @@ li[data-t3tags-hidden] {
     color: var(--destructive, #ef4444);
     font-size: 11.5px;
 }
+
+/* Auto-tagging settings. */
+.t3tags-settings-select {
+    flex-shrink: 0;
+    max-width: 260px;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid color-mix(in oklab, var(--contrast-border, var(--border)) 60%, transparent);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--contrast-foreground, var(--foreground));
+    font-size: 13px;
+}
+
+.t3ext-row.t3tags-settings-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.t3tags-settings-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in oklab, var(--contrast-border, var(--border)) 60%, transparent);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--contrast-foreground, var(--foreground));
+    font: inherit;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.t3tags-settings-head {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.t3tags-settings-override {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+}
+
+.t3tags-settings-prompt {
+    font: 12px/1.5 ui-monospace, monospace;
+}
+
+.t3tags-settings-prompt[readonly] {
+    color: var(--muted-foreground);
+    background: color-mix(in srgb, var(--muted, #27272a) 50%, transparent);
+}
+
+.t3tags-settings-variables {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+}
+
+.t3tags-settings-variables > div {
+    display: flex;
+    gap: 8px;
+}
+
+.t3tags-settings-variables dt {
+    flex: 0 0 120px;
+}
+
+.t3tags-settings-variables dd {
+    margin: 0;
+}
+
+.t3tags-settings-reset {
+    align-self: flex-start;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in oklab, var(--contrast-border, var(--border)) 60%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--contrast-foreground, var(--foreground));
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.t3tags-settings-reset:hover {
+    background: var(--accent);
+}
+
+.t3tags-settings-select:disabled,
+.t3tags-settings-textarea:disabled,
+.t3tags-settings-reset:disabled {
+    opacity: 0.5;
+}

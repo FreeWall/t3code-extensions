@@ -3,9 +3,11 @@ import { render } from "preact";
 
 import type { Extension } from "../extension.ts";
 import { subscribe } from "../store.ts";
+import { watchNewThreads } from "./autotag.ts";
 import { FilterBar } from "./FilterBar.tsx";
 import { clearRows, decorateRows, watchChipClicks } from "./rows.ts";
 import { TagEditor } from "./TagEditor.tsx";
+import { TagsSettings } from "./TagsSettings.tsx";
 import { subscribeFilter, threadIdFromRowKey } from "./tags.ts";
 import styles from "./tags.css";
 
@@ -30,9 +32,10 @@ function mountEditor(): { open: (threadId: string, x: number, y: number) => void
 export const tags: Extension = {
   name: "tags",
   title: "Thread tags",
-  description: "Tag labels on sidebar threads and a tag filter",
+  description: "Tag labels on sidebar threads, a tag filter, and auto-tagging of new threads",
   icon: Tag,
   styles,
+  Settings: TagsSettings,
   mount: () => {
     const editor = mountEditor();
     const bar = document.createElement("div");
@@ -63,6 +66,7 @@ export const tags: Extension = {
     const stopStore = subscribe(schedule);
     const stopFilter = subscribeFilter(schedule);
     const stopChips = watchChipClicks();
+    const stopAutoTag = watchNewThreads();
     schedule();
 
     // Shift+right-click on a thread row edits its tags; a plain right-click keeps the app's menu.
@@ -83,6 +87,7 @@ export const tags: Extension = {
       stopStore();
       stopFilter();
       stopChips();
+      stopAutoTag();
       render(null, bar);
       bar.remove();
       editor.stop();

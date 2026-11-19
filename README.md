@@ -8,7 +8,7 @@ into one script injected into the app as `/custom.js`.
 | Project rail | `src/rail/` | Discord-style project rail on the left edge |
 | Usage bar | `src/usage/` | Provider usage limits in the thread header |
 | New thread in filtered project | `src/new-thread/` | Sidebar New thread starts in the project the sidebar is filtered to |
-| Thread tags | `src/tags/` | Tag labels on sidebar threads and a filter by tag |
+| Thread tags | `src/tags/` | Tag labels on sidebar threads, a filter by tag, and auto-tagging of new threads |
 
 Shared code lives in `src/`: the backend connection (`connection.ts`, `protocol.ts`), the shell
 projection of projects and threads (`store.ts`), app DOM helpers (`app.ts`), and settings
@@ -60,6 +60,28 @@ To tag a thread, Shift+right-click it in the sidebar, or use **+** in the bar fo
 The popover offers the tags of the thread's project and adds new ones (Enter). The app's native context menu can't
 be extended (`desktopBridge` is frozen), so a plain right-click keeps the app's menu. Tags live on
 the server, so they sync across devices and don't bump the thread's `updatedAt`.
+
+### Auto-tagging
+
+When a new thread's first run finishes, auto-tagging asks Claude Haiku whether it belongs with other
+threads of its project, and tags it (and the threads it relates to) if so. It prefers existing tags
+and only makes a new one when at least one other thread shares it. Threads created before it was
+first switched on are left alone, and a thread you tag yourself first is skipped. Side chats and
+subagents are never tagged.
+
+It asks through T3 Code itself: it launches a thread titled `Auto-tag` on the chosen model
+(approval-required, so it can't act), reads the JSON reply and deletes the thread. The sidebar hides that thread, but it is a real run, so anything hooked to finished runs
+sees it, e.g. a t3code-listener hook can skip it with `"match": { "titlePattern": "^(?!Auto-tag$)" }`.
+It only runs while an app window is open; a Web Lock keeps windows from doing the same thread twice.
+Applied tags are logged to the console as `[t3ext] auto-tag`.
+
+Its settings (Extensions → Thread tags, or `tags` in the settings file):
+
+- **Auto-tag new threads**: on by default. Switching it back on doesn't tag the threads made while it was off.
+- **Model**: any model of an enabled provider; defaults to `claudeAgent` / `claude-haiku-5-5`.
+- **Custom prompt**: off uses the built-in prompt, shown read-only. On, the prompt is editable, with
+  `${title}`, `${firstMessage}`, `${project}`, `${threads}` and `${maxTags}` filled per thread; switching
+  it off keeps your text for later.
 
 ## Settings
 

@@ -7,6 +7,9 @@
 import { dispatchCommand } from "../connection.ts";
 import type { ShellState, Thread } from "../store.ts";
 
+/** Title of the throwaway thread auto-tagging asks the model in; the sidebar hides it. */
+export const AUTOTAG_TITLE = "Auto-tag";
+
 /** Same rule as `ThreadTag` in the contracts: one trimmed line, at most 64 characters. */
 export const MAX_TAG_LENGTH = 64;
 

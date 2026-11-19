@@ -5,7 +5,7 @@ import * as Stream from "effect/Stream";
 import { RpcClient, RpcSerialization } from "effect/unstable/rpc";
 import { Socket } from "effect/unstable/socket";
 
-import { type OrchestrationCommand, ORCHESTRATION_PROTOCOL_VERSION, ServerRpcGroup } from "./protocol.ts";
+import { type LaunchThreadInput, type OrchestrationCommand, ORCHESTRATION_PROTOCOL_VERSION, ServerRpcGroup } from "./protocol.ts";
 import { attachSettingsFile, SETTINGS_DIRECTORY, type SettingsFile } from "./settings.ts";
 import { applyShellItem, getState, setEnvironmentId, setStatus } from "./store.ts";
 
@@ -128,6 +128,18 @@ export const onSession = (handler: SessionHandler): (() => void) => {
 export function dispatchCommand(command: OrchestrationCommand): Promise<void> {
   if (liveClient === null) return Promise.reject(new Error("offline"));
   return Effect.runPromise(Effect.asVoid(liveClient["orchestration.dispatchCommand"](command)));
+}
+
+/** Starts a thread with its first message; resolves to the server's launch result. */
+export function launchThread(input: LaunchThreadInput): Promise<unknown> {
+  if (liveClient === null) return Promise.reject(new Error("offline"));
+  return Effect.runPromise(liveClient["orchestration.launchThread"](input));
+}
+
+/** One thread's full state, messages included. */
+export function getThreadProjection(threadId: string): Promise<unknown> {
+  if (liveClient === null) return Promise.reject(new Error("offline"));
+  return Effect.runPromise(liveClient["orchestration.getThreadProjection"]({ threadId }));
 }
 
 /**

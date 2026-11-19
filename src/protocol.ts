@@ -77,10 +77,44 @@ const ThreadTagSetCommand = Schema.Struct({
   tagged: Schema.Boolean,
 });
 
-export type OrchestrationCommand = typeof ThreadTagSetCommand.Type;
+const ThreadDeleteCommand = Schema.Struct({
+  type: Schema.Literal("thread.delete"),
+  commandId: Schema.String,
+  threadId: Schema.String,
+});
+
+const OrchestrationCommand = Schema.Union([ThreadTagSetCommand, ThreadDeleteCommand]);
+export type OrchestrationCommand = typeof OrchestrationCommand.Type;
 
 const DispatchCommandRpc = Rpc.make("orchestration.dispatchCommand", {
-  payload: ThreadTagSetCommand,
+  payload: OrchestrationCommand,
+  success: Schema.Unknown,
+  error: Schema.Unknown,
+});
+
+/** Creates a thread and sends its first message in one step, like the app's composer. */
+const LaunchThreadInput = Schema.Struct({
+  commandId: Schema.String,
+  projectId: Schema.String,
+  title: Schema.String,
+  generateTitle: Schema.Boolean,
+  modelSelection: Schema.Struct({ instanceId: Schema.String, model: Schema.String }),
+  runtimeMode: Schema.Literals(["approval-required", "auto-accept-edits", "auto", "full-access"]),
+  interactionMode: Schema.Literals(["default", "plan"]),
+  workspaceStrategy: Schema.Struct({ type: Schema.Literal("root") }),
+  initialMessage: Schema.Struct({ text: Schema.String, attachments: Schema.Array(Schema.Unknown) }),
+});
+export type LaunchThreadInput = typeof LaunchThreadInput.Type;
+
+const LaunchThreadRpc = Rpc.make("orchestration.launchThread", {
+  payload: LaunchThreadInput,
+  success: Schema.Unknown,
+  error: Schema.Unknown,
+});
+
+/** One thread's full state, messages included. */
+const GetThreadProjectionRpc = Rpc.make("orchestration.getThreadProjection", {
+  payload: Schema.Struct({ threadId: Schema.String }),
   success: Schema.Unknown,
   error: Schema.Unknown,
 });
@@ -94,6 +128,8 @@ export const ServerRpcGroup = RpcGroup.make(
   ProjectsReadFileRpc,
   ProjectsWriteFileRpc,
   DispatchCommandRpc,
+  LaunchThreadRpc,
+  GetThreadProjectionRpc,
 );
 
 /** Must match the server; the /ws upgrade is rejected with 426 otherwise. */
