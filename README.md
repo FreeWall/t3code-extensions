@@ -56,7 +56,7 @@ the bar or on a row, shows only the threads that carry it; clicking it again sho
 is remembered per window (`localStorage`) and only applies while the shown project has that tag,
 so switching projects never leaves an empty list. Search results are never filtered.
 
-To tag a thread, Shift+right-click it in the sidebar, or use **+** in the bar for the open thread.
+To tag a thread, right-click one of its tags in the sidebar (or Shift+right-click anywhere on the row), or use **+** in the bar for the open thread. To rename a tag, right-click it in the bar (renames it in the shown project, or everywhere for "All projects"), or hover it in the tag popover and click the pencil; renaming to an existing tag merges them. The bar's right-click popover also removes a tag from all those threads.
 The popover offers the tags of the thread's project and adds new ones (Enter). The app's native context menu can't
 be extended (`desktopBridge` is frozen), so a plain right-click keeps the app's menu. Tags live on
 the server, so they sync across devices and don't bump the thread's `updatedAt`.

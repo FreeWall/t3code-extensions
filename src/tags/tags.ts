@@ -5,7 +5,7 @@
  */
 
 import { dispatchCommand } from "../connection.ts";
-import type { ShellState, Thread } from "../store.ts";
+import { getState, type ShellState, type Thread } from "../store.ts";
 
 /** Title of the throwaway thread auto-tagging asks the model in; the sidebar hides it. */
 export const AUTOTAG_TITLE = "Auto-tag";
@@ -20,6 +20,29 @@ export function normalizeTag(input: string): string | null {
 
 export const setThreadTag = (threadId: string, tag: string, tagged: boolean): Promise<void> =>
   dispatchCommand({ type: "thread.tag.set", commandId: crypto.randomUUID(), threadId, tag, tagged });
+
+/**
+ * Moves `from` to `to` on every given thread that carries it; an existing `to` merges.
+ * Each thread gains the new tag before losing the old, so it is never left untagged.
+ */
+export async function renameTag(threads: Iterable<Thread>, from: string, to: string): Promise<void> {
+  const tagged = [...threads].filter((thread) => thread.tags.includes(from));
+  await Promise.all(
+    tagged.map(async (thread) => {
+      if (!thread.tags.includes(to)) await setThreadTag(thread.id, to, true);
+      await setThreadTag(thread.id, from, false);
+    }),
+  );
+  // Filtering by the old name would match nothing; follow the rename.
+  if (filter === from) setFilter(to);
+}
+
+/** Takes `tag` off every given thread that carries it. */
+export async function removeTag(threads: Iterable<Thread>, tag: string): Promise<void> {
+  const tagged = [...threads].filter((thread) => thread.tags.includes(tag));
+  await Promise.all(tagged.map((thread) => setThreadTag(thread.id, tag, false)));
+  if (filter === tag) setFilter(null);
+}
 
 export interface TagCount {
   readonly tag: string;
@@ -50,11 +73,47 @@ export function threadsInScope(state: ShellState, scopeLabel: string | null): Th
   return threads.filter((thread) => projectIds.has(thread.projectId));
 }
 
-/** A stable hue per tag, so a tag looks the same everywhere. */
-export function tagHue(tag: string): number {
+/** Hues far enough apart to tell chips apart at a glance. */
+const HUES = [260, 145, 25, 200, 320, 85, 0, 175, 290, 50, 230, 115];
+
+function hashSlot(tag: string): number {
   let hash = 0;
   for (const char of tag) hash = (hash * 31 + char.codePointAt(0)!) | 0;
-  return Math.abs(hash) % 360;
+  return Math.abs(hash) % HUES.length;
+}
+
+/**
+ * Each tag gets its hashed palette slot, or the next free one when an older tag holds it,
+ * so tags differ until the palette runs out. Older tags pick first and keep their color.
+ */
+function assignHues(threads: ReadonlyMap<string, Thread>): Map<string, number> {
+  const firstSeen = new Map<string, string>();
+  for (const thread of threads.values()) {
+    for (const tag of thread.tags) {
+      const seen = firstSeen.get(tag);
+      if (seen === undefined || thread.createdAt < seen) firstSeen.set(tag, thread.createdAt);
+    }
+  }
+  const taken = new Set<number>();
+  const hues = new Map<string, number>();
+  const byAge = [...firstSeen].sort(([a, x], [b, y]) => x.localeCompare(y) || a.localeCompare(b));
+  for (const [tag] of byAge) {
+    let slot = hashSlot(tag);
+    for (let step = 0; step < HUES.length && taken.has(slot); step++) slot = (slot + 1) % HUES.length;
+    taken.add(slot);
+    hues.set(tag, HUES[slot]!);
+  }
+  return hues;
+}
+
+const hueCache = new WeakMap<ReadonlyMap<string, Thread>, Map<string, number>>();
+
+/** A tag's hue, the same everywhere: distinct from other tags' while the palette lasts. */
+export function tagHue(tag: string): number {
+  const { threads } = getState();
+  let hues = hueCache.get(threads);
+  if (hues === undefined) hueCache.set(threads, (hues = assignHues(threads)));
+  return hues.get(tag) ?? HUES[hashSlot(tag)]!;
 }
 
 /** Sidebar row keys are `environmentId:threadId`; thread ids can contain colons. */

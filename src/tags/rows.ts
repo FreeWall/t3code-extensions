@@ -24,7 +24,7 @@ function chipsFor(tags: ReadonlyArray<string>, active: string | null): HTMLEleme
     const chip = document.createElement("span");
     chip.className = "t3tags-chip";
     chip.textContent = tag;
-    chip.title = active === tag ? `Showing only “${tag}”; click to show all` : `Show only “${tag}”`;
+    chip.title = `${active === tag ? `Showing only “${tag}”; click to show all` : `Show only “${tag}”`} (right-click to edit tags)`;
     chip.dataset.tag = tag;
     if (active === tag) chip.dataset.active = "";
     chip.style.setProperty("--t3tag-hue", String(tagHue(tag)));
@@ -44,7 +44,7 @@ function decorate(item: HTMLElement, filter: string | null): void {
   if (item.hasAttribute(HIDDEN) !== hide) item.toggleAttribute(HIDDEN, hide);
 
   const existing = item.querySelector<HTMLElement>(".t3tags-chips");
-  const signature = `${filter ?? ""}\u0000${tags.join("\u0000")}`;
+  const signature = `${filter ?? ""}\u0000${tags.map((tag) => `${tag}:${tagHue(tag)}`).join("\u0000")}`;
   if (tags.length === 0) {
     existing?.remove();
     return;

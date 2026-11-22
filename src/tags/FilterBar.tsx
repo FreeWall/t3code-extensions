@@ -36,7 +36,13 @@ function useAppLocation(): { route: string; scopeLabel: string | null } {
  * Tag chips under the sidebar search: click one to show only its threads. Lists the
  * tags of the project the sidebar is filtered to, or of every project for "All projects".
  */
-export function FilterBar({ onEdit }: { onEdit: (threadId: string, anchor: DOMRect) => void }) {
+export function FilterBar({
+  onEdit,
+  onRename,
+}: {
+  onEdit: (threadId: string, anchor: DOMRect) => void;
+  onRename: (tag: string, scopeLabel: string | null, x: number, y: number) => void;
+}) {
   const state = useSyncExternalStore(subscribe, getState);
   useSyncExternalStore(subscribeFilter, getFilter);
   const { route, scopeLabel } = useAppLocation();
@@ -60,9 +66,13 @@ export function FilterBar({ onEdit }: { onEdit: (threadId: string, anchor: DOMRe
             class="t3tags-chip"
             data-active={active ? "" : undefined}
             aria-pressed={active}
-            title={active ? "Show all threads" : `Show only threads tagged “${tag}”`}
+            title={`${active ? "Show all threads" : `Show only threads tagged “${tag}”`} (right-click to rename)`}
             style={{ "--t3tag-hue": String(tagHue(tag)) }}
             onClick={() => setFilter(active ? null : tag)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              onRename(tag, scopeLabel, event.clientX, event.clientY);
+            }}
           >
             {tag}
             {active ? <Icon node={X} class="t3tags-chip-icon" /> : <span class="t3tags-count">{count}</span>}

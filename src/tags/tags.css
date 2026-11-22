@@ -132,7 +132,15 @@ li[data-t3tags-hidden] {
     overflow-y: auto;
 }
 
+.t3tags-editor-item {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
 .t3tags-editor-option {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -160,8 +168,98 @@ li[data-t3tags-hidden] {
     outline: none;
 }
 
+.t3tags-editor-rename {
+    flex: 1;
+    min-width: 0;
+    height: 24px;
+}
+
+.t3tags-editor-rename-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted-foreground, #a1a1aa);
+    cursor: pointer;
+    opacity: 0;
+}
+
+.t3tags-editor-item:hover .t3tags-editor-rename-button,
+.t3tags-editor-rename-button:focus-visible {
+    opacity: 1;
+}
+
+.t3tags-editor-rename-button:hover {
+    background: var(--accent, #27272a);
+    color: var(--foreground, #fafafa);
+}
+
 .t3tags-editor-input:focus {
     border-color: var(--ring, #71717a);
+}
+
+.t3tags-rename-form {
+    display: flex;
+    gap: 6px;
+}
+
+.t3tags-rename-form .t3tags-editor-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.t3tags-rename-submit {
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--primary, #fafafa);
+    color: var(--primary-foreground, #18181b);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.t3tags-rename-submit:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--primary, #fafafa) 88%, black);
+}
+
+.t3tags-rename-submit:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* Filled like the app's destructive dialog button. */
+.t3tags-remove {
+    align-self: flex-start;
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--destructive, #ef4444);
+    color: #fff;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.t3tags-remove:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--destructive, #ef4444) 88%, black);
+}
+
+.t3tags-remove:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.t3tags-rename-hint {
+    color: var(--muted-foreground, #a1a1aa);
+    font-size: 11.5px;
 }
 
 .t3tags-editor-error {
