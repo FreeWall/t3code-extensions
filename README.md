@@ -22,9 +22,9 @@ An extension that needs the socket registers with `onSession`, which also return
 One icon per project:
 
 - Clicking a project filters the app's sidebar to it (it drives the sidebar's own project picker).
-- Projects of remote environments saved under Connections show too, when they were added by pairing
-  link / URL (bearer token, read from the app's connection catalog). Relay (T3 Connect) and SSH
-  environments are not followed.
+- Projects of remote environments saved under Connections show too. They are read from the shell
+  cache the app keeps in IndexedDB, not over a socket of their own, so their badges trail the app
+  by up to ~10 s, and tags can't be changed on their threads.
 - A red badge counts threads waiting for you (approval, input, a plan ready in plan mode) plus finished
   runs you haven't opened; clicking it opens the first one.
 - An amber pen marks a project with an unsent composer draft; clicking it opens the draft.
