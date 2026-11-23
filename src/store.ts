@@ -12,6 +12,8 @@ export type ProjectIcon =
 
 export interface Project {
   readonly id: string;
+  /** Backend the project lives on: the window's own or a saved remote one. */
+  readonly environmentId: string;
   readonly title: string;
   readonly workspaceRoot: string;
   readonly faviconPath: string | null;
@@ -22,6 +24,7 @@ export interface Project {
 
 export interface Thread {
   readonly id: string;
+  readonly environmentId: string;
   readonly projectId: string;
   readonly title: string;
   readonly working: boolean;
@@ -42,8 +45,10 @@ export interface Thread {
 export type ConnectionStatus = "connecting" | "live" | "offline";
 
 export interface ShellState {
+  /** Live while any backend is. */
   readonly status: ConnectionStatus;
-  readonly environmentId: string | null;
+  /** The window's own backend; null until it answers. */
+  readonly primaryEnvironmentId: string | null;
   readonly projects: ReadonlyMap<string, Project>;
   readonly threads: ReadonlyMap<string, Thread>;
 }
@@ -74,12 +79,13 @@ function toProjectIcon(value: unknown): ProjectIcon | null {
   return null;
 }
 
-function toProject(value: unknown): Project | undefined {
+function toProject(environmentId: string, value: unknown): Project | undefined {
   const raw = record(value);
   const id = string(raw?.id);
   if (raw === undefined || id === undefined) return undefined;
   return {
     id,
+    environmentId,
     title: string(raw.title) ?? id,
     workspaceRoot: string(raw.workspaceRoot) ?? "",
     faviconPath: string(raw.faviconPath) ?? null,
@@ -92,7 +98,7 @@ function toProject(value: unknown): Project | undefined {
 /** Background work kinds that keep a settled thread "Waiting", as in the app sidebar. */
 const HOLDING_TASK_KINDS = new Set(["subagent", "monitor", "background_task"]);
 
-function toThread(value: unknown): Thread | undefined {
+function toThread(environmentId: string, value: unknown): Thread | undefined {
   const raw = record(value);
   const id = string(raw?.id);
   const projectId = string(raw?.projectId);
@@ -116,6 +122,7 @@ function toThread(value: unknown): Thread | undefined {
   const tasks = Array.isArray(raw.pendingBackgroundTasks) ? raw.pendingBackgroundTasks : [];
   return {
     id,
+    environmentId,
     projectId,
     title: string(raw.title) ?? "",
     working,
@@ -141,7 +148,7 @@ function toThread(value: unknown): Thread | undefined {
 
 let state: ShellState = {
   status: "connecting",
-  environmentId: null,
+  primaryEnvironmentId: null,
   projects: new Map(),
   threads: new Map(),
 };
@@ -163,10 +170,23 @@ export const setStatus = (status: ConnectionStatus): void => {
   if (state.status !== status) set({ status });
 };
 
-export const setEnvironmentId = (environmentId: string): void => set({ environmentId });
+export const setPrimaryEnvironmentId = (primaryEnvironmentId: string): void => {
+  if (state.primaryEnvironmentId !== primaryEnvironmentId) set({ primaryEnvironmentId });
+};
 
-/** Applies one `orchestration.subscribeShell` stream item. */
-export function applyShellItem(item: unknown): void {
+/** Entries of other environments, which a snapshot of this one leaves alone. */
+const others = <T extends { readonly environmentId: string }>(
+  entries: ReadonlyMap<string, T>,
+  environmentId: string,
+): Map<string, T> => new Map([...entries].filter(([, entry]) => entry.environmentId !== environmentId));
+
+/** Forgets an environment that is no longer saved. */
+export function clearEnvironment(environmentId: string): void {
+  set({ projects: others(state.projects, environmentId), threads: others(state.threads, environmentId) });
+}
+
+/** Applies one `orchestration.subscribeShell` stream item from this environment. */
+export function applyShellItem(environmentId: string, item: unknown): void {
   const raw = record(item);
   switch (string(raw?.kind)) {
     case "snapshot": {
@@ -174,21 +194,21 @@ export function applyShellItem(item: unknown): void {
       // resolved and no threads; they patch identity, which no extension reads.
       if (raw?.resolvedRepositoryIdentityRoots !== undefined) return;
       const snapshot = record(raw?.snapshot);
-      const projects = new Map<string, Project>();
+      const projects = others(state.projects, environmentId);
       for (const value of (snapshot?.projects as unknown[]) ?? []) {
-        const project = toProject(value);
+        const project = toProject(environmentId, value);
         if (project) projects.set(project.id, project);
       }
-      const threads = new Map<string, Thread>();
+      const threads = others(state.threads, environmentId);
       for (const value of (snapshot?.threads as unknown[]) ?? []) {
-        const thread = toThread(value);
+        const thread = toThread(environmentId, value);
         if (thread) threads.set(thread.id, thread);
       }
       set({ projects, threads });
       return;
     }
     case "project.updated": {
-      const project = toProject(raw?.project);
+      const project = toProject(environmentId, raw?.project);
       if (!project) return;
       set({ projects: new Map(state.projects).set(project.id, project) });
       return;
@@ -204,7 +224,7 @@ export function applyShellItem(item: unknown): void {
     case "thread.updated": {
       const id = string(record(raw?.thread)?.id);
       if (id === undefined) return;
-      const thread = raw?.location === "active" ? toThread(raw?.thread) : undefined;
+      const thread = raw?.location === "active" ? toThread(environmentId, raw?.thread) : undefined;
       const threads = new Map(state.threads);
       if (thread) threads.set(id, thread);
       else threads.delete(id);

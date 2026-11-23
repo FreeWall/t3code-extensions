@@ -30,6 +30,6 @@ export function useOrderedProjects(): Project[] {
     );
     return manual
       ? orderProjects(projects, settings.projectOrder)
-      : sortLikeApp(projects, state.threads.values(), state.environmentId, appOrder);
-  }, [manual, state.projects, state.threads, state.environmentId, settings.projectOrder, appOrder]);
+      : sortLikeApp(projects, state.threads.values(), appOrder);
+  }, [manual, state.projects, state.threads, settings.projectOrder, appOrder]);
 }

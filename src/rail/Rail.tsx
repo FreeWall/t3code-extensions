@@ -251,7 +251,7 @@ export function Rail() {
     navigate(path);
   };
   const openThread = (project: Project, thread: Thread) => {
-    if (state.environmentId) void openInProject(project, `/${state.environmentId}/${thread.id}`);
+    void openInProject(project, `/${thread.environmentId}/${thread.id}`);
   };
 
   return (

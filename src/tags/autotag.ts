@@ -56,7 +56,9 @@ function markDone(threadId: string): void {
 const isDone = (threadId: string): boolean => readDone().includes(threadId);
 
 /** A thread whose first run finished and that has no tags yet. */
+/** Only the window's own backend: a remote one's threads are its own windows' to tag. */
 const isCandidate = (thread: Thread, since: string): boolean =>
+  thread.environmentId === getState().primaryEnvironmentId &&
   thread.title !== AUTOTAG_TITLE &&
   thread.createdAt > since &&
   thread.tags.length === 0 &&
@@ -144,11 +146,12 @@ function runFinished(threadId: string): Promise<void> {
   });
 }
 
-const deleteThread = async (threadId: string) => dispatchCommand({ type: "thread.delete", commandId: crypto.randomUUID(), threadId });
+const deleteThread = async (environmentId: string, threadId: string) =>
+  dispatchCommand(environmentId, { type: "thread.delete", commandId: crypto.randomUUID(), threadId });
 
 /** Asks the model and returns its reply text. */
-async function ask(projectId: string, text: string): Promise<string> {
-  const launched = await launchThread({
+async function ask(environmentId: string, projectId: string, text: string): Promise<string> {
+  const launched = await launchThread(environmentId, {
     commandId: crypto.randomUUID(),
     projectId,
     title: AUTOTAG_TITLE,
@@ -164,15 +167,15 @@ async function ask(projectId: string, text: string): Promise<string> {
   if (threadId === undefined) throw new Error("launchThread returned no thread id");
   try {
     await runFinished(threadId);
-    const reply = messages(await getThreadProjection(threadId)).filter((m) => m.role === "assistant").sort(byTime).at(-1);
+    const reply = messages(await getThreadProjection(environmentId, threadId)).filter((m) => m.role === "assistant").sort(byTime).at(-1);
     return reply?.text ?? "";
   } finally {
-    await deleteThread(threadId).catch(() => undefined);
+    await deleteThread(environmentId, threadId).catch(() => undefined);
   }
 }
 
 async function tagThread(thread: Thread): Promise<void> {
-  const firstMessage = messages(await getThreadProjection(thread.id)).filter((m) => m.role === "user").sort(byTime)[0];
+  const firstMessage = messages(await getThreadProjection(thread.environmentId, thread.id)).filter((m) => m.role === "user").sort(byTime)[0];
   const others = [...getState().threads.values()]
     .filter((other) => other.projectId === thread.projectId && other.id !== thread.id && other.title !== AUTOTAG_TITLE)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
@@ -180,14 +183,14 @@ async function tagThread(thread: Thread): Promise<void> {
 
   const known = new Map(countTags(others).map(({ tag }) => [tag.toLowerCase(), tag]));
 
-  const reply = await ask(thread.projectId, prompt(thread, firstMessage?.text ?? "", others));
+  const reply = await ask(thread.environmentId, thread.projectId, prompt(thread, firstMessage?.text ?? "", others));
   for (const suggestion of parseReply(reply).slice(0, MAX_TAGS)) {
     const existing = known.get(suggestion.tag.toLowerCase());
     const tag = existing ?? suggestion.tag;
     const related = suggestion.threads.flatMap((n) => others[n - 1] ?? []).filter((other) => !other.tags.includes(tag));
     // A new tag on one thread alone groups nothing.
     if (existing === undefined && related.length === 0) continue;
-    await Promise.all([thread, ...related].map((target) => setThreadTag(target.id, tag, true)));
+    await Promise.all([thread, ...related].map((target) => setThreadTag(target, tag, true)));
     console.info(`[t3ext] auto-tag “${tag}”:`, [thread, ...related].map((target) => target.title));
   }
 }
@@ -198,7 +201,7 @@ const cleanUpLater = (): Promise<void> => navigator.locks.request("t3ext:autotag
 async function cleanUp(): Promise<void> {
   const cutoff = new Date(Date.now() - STALE_MS).toISOString();
   const stale = [...getState().threads.values()].filter((t) => t.title === AUTOTAG_TITLE && t.createdAt < cutoff);
-  await Promise.all(stale.map((t) => deleteThread(t.id).catch(() => undefined)));
+  await Promise.all(stale.map((t) => deleteThread(t.environmentId, t.id).catch(() => undefined)));
 }
 
 /**

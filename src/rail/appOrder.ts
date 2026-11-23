@@ -99,7 +99,6 @@ const trimPath = (path: string): string => path.trim().replace(/(?<=.)[\\/]+$/, 
 export function sortLikeApp(
   projects: ReadonlyArray<Project>,
   threads: Iterable<Thread>,
-  environmentId: string | null,
   { sort, manual }: AppOrder,
 ): Project[] {
   if (sort === "manual") {
@@ -107,7 +106,7 @@ export function sortLikeApp(
     const rankOf = (project: Project) => {
       const path = trimPath(project.workspaceRoot);
       return Math.min(
-        rank.get(`${environmentId}:${path}`) ?? Infinity,
+        rank.get(`${project.environmentId}:${path}`) ?? Infinity,
         rank.get(`${LEGACY_CWD_PREFIX}${path}`) ?? Infinity,
       );
     };

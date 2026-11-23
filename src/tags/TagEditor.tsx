@@ -57,7 +57,7 @@ export function TagEditor({ threadId, x, y, onClose }: TagEditorProps) {
 
   const toggle = (tag: string, tagged: boolean) => {
     setError(null);
-    setThreadTag(threadId, tag, tagged).catch(() => setError("Couldn't save the tag"));
+    setThreadTag(thread, tag, tagged).catch(() => setError("Couldn't save the tag"));
   };
 
   /** Reads the field itself: a fast Enter can beat the render that stores the last keystroke. */

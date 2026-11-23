@@ -62,10 +62,10 @@ function LucideIcon({ name, color }: { name: string; color: string }) {
 const faviconCache = new Map<string, Promise<string | null>>();
 
 function faviconUrl(project: Project): Promise<string | null> {
-  const key = `${project.workspaceRoot}\0${project.faviconPath ?? ""}`;
+  const key = `${project.environmentId}\0${project.workspaceRoot}\0${project.faviconPath ?? ""}`;
   let cached = faviconCache.get(key);
   if (cached === undefined) {
-    cached = createAssetUrl({
+    cached = createAssetUrl(project.environmentId, {
       _tag: "project-favicon",
       cwd: project.workspaceRoot,
       ...(project.faviconPath ? { path: project.faviconPath } : {}),

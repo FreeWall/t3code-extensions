@@ -18,8 +18,14 @@ export function normalizeTag(input: string): string | null {
   return tag.length > 0 && tag.length <= MAX_TAG_LENGTH && !/\p{Cc}/u.test(tag) ? tag : null;
 }
 
-export const setThreadTag = (threadId: string, tag: string, tagged: boolean): Promise<void> =>
-  dispatchCommand({ type: "thread.tag.set", commandId: crypto.randomUUID(), threadId, tag, tagged });
+export const setThreadTag = (thread: Thread, tag: string, tagged: boolean): Promise<void> =>
+  dispatchCommand(thread.environmentId, {
+    type: "thread.tag.set",
+    commandId: crypto.randomUUID(),
+    threadId: thread.id,
+    tag,
+    tagged,
+  });
 
 /**
  * Moves `from` to `to` on every given thread that carries it; an existing `to` merges.
@@ -29,8 +35,8 @@ export async function renameTag(threads: Iterable<Thread>, from: string, to: str
   const tagged = [...threads].filter((thread) => thread.tags.includes(from));
   await Promise.all(
     tagged.map(async (thread) => {
-      if (!thread.tags.includes(to)) await setThreadTag(thread.id, to, true);
-      await setThreadTag(thread.id, from, false);
+      if (!thread.tags.includes(to)) await setThreadTag(thread, to, true);
+      await setThreadTag(thread, from, false);
     }),
   );
   // Filtering by the old name would match nothing; follow the rename.
@@ -40,7 +46,7 @@ export async function renameTag(threads: Iterable<Thread>, from: string, to: str
 /** Takes `tag` off every given thread that carries it. */
 export async function removeTag(threads: Iterable<Thread>, tag: string): Promise<void> {
   const tagged = [...threads].filter((thread) => thread.tags.includes(tag));
-  await Promise.all(tagged.map((thread) => setThreadTag(thread.id, tag, false)));
+  await Promise.all(tagged.map((thread) => setThreadTag(thread, tag, false)));
   if (filter === tag) setFilter(null);
 }
 
