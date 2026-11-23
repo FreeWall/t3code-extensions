@@ -1,12 +1,13 @@
 /**
  * Actions on the running app. Which project the sidebar is filtered to lives only in
  * the app's client store, so the rail reads it from, and drives, the sidebar's own
- * "Filter threads by project" picker. Selectors here follow `Sidebar.tsx`; expect to
+ * "Projects" picker. Selectors here follow `Sidebar.tsx`; expect to
  * touch them when a nightly reshapes the sidebar header.
  */
 
-const SCOPE_TRIGGER = 'button[aria-label^="Filter threads by project"]';
-const SCOPE_LABEL_PREFIX = "Filter threads by project: ";
+const SCOPE_TRIGGER =
+  '[data-slot="sidebar"] button:is([aria-label="Projects"], [aria-label^="Projects: "])';
+const SCOPE_LABEL_PREFIX = "Projects: ";
 const WAIT_TIMEOUT_MS = 1500;
 
 const scopeTrigger = (): HTMLElement | null => document.querySelector(SCOPE_TRIGGER);
