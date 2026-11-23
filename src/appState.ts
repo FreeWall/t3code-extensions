@@ -7,8 +7,8 @@
  * sends, decoded. Expect to touch the labels when a nightly renames them.
  */
 
-import { record } from "./json.ts";
-import { applyShellItem, clearEnvironment, getState } from "./store.ts";
+import { record, string } from "./json.ts";
+import { applyShellItem, clearEnvironment, getState, type Project } from "./store.ts";
 
 const SNAPSHOT_LABEL = "environment-snapshot:";
 const POLL_MS = 1000;
@@ -84,4 +84,41 @@ export function watchAppState(): void {
       console.warn("[t3ext] app state unreadable", error);
     }
   }, POLL_MS);
+}
+
+/* Favicons: the app keeps a thumbnail of each project's icon it has shown
+   (`apps/web/src/assets/projectFaviconCache.ts`), as a data URL. */
+
+const FAVICON_DATABASE = "t3code:project-favicons";
+const FAVICON_STORE = "images";
+
+/** Every cached thumbnail; opened only once the app has made the database, so upgrades stay the app's. */
+async function readFavicons(): Promise<unknown[]> {
+  if (!(await indexedDB.databases()).some((entry) => entry.name === FAVICON_DATABASE)) return [];
+  const database = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(FAVICON_DATABASE);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  try {
+    if (!database.objectStoreNames.contains(FAVICON_STORE)) return [];
+    const all = database.transaction(FAVICON_STORE, "readonly").objectStore(FAVICON_STORE).getAll();
+    return await new Promise((resolve, reject) => {
+      all.onsuccess = () => resolve(all.result);
+      all.onerror = () => reject(all.error);
+    });
+  } finally {
+    database.close();
+  }
+}
+
+/** The app's thumbnail of this project's icon, if it has shown it. */
+export async function appFavicon(project: Project): Promise<string | null> {
+  const entry = (await readFavicons()).map(record).find(
+    (candidate) =>
+      candidate?.environmentId === project.environmentId &&
+      candidate.cwd === project.workspaceRoot &&
+      (candidate.faviconPath ?? null) === (project.faviconPath || null),
+  );
+  return string(entry?.dataUrl) ?? null;
 }

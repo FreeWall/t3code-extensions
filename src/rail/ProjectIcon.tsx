@@ -2,6 +2,7 @@ import { icons, type IconNode } from "lucide";
 import { createElement } from "preact";
 import { useEffect, useState } from "preact/hooks";
 
+import { appFavicon } from "../appState.ts";
 import { createAssetUrl } from "../connection.ts";
 import type { Project } from "../store.ts";
 
@@ -70,6 +71,8 @@ function faviconUrl(project: Project): Promise<string | null> {
       cwd: project.workspaceRoot,
       ...(project.faviconPath ? { path: project.faviconPath } : {}),
     })
+      // Remote projects have no socket here; the app's own thumbnail stands in.
+      .then((url) => url ?? appFavicon(project))
       .then((url) => (url === null || url.includes(FALLBACK_MARKER) ? null : url))
       .catch(() => null);
     // Offline or failed lookups retry on the next render instead of sticking.
